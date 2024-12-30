@@ -1,0 +1,15 @@
+.product_table_format {
+   display: grid;
+   grid-template-columns: repeat(7, 1fr);
+   align-items: center;
+   gap: 10px;
+   padding: 12px 15px;
+   border: solid 1px #cacaca;
+   font-size: 13px;
+}
+
+.product_table_format.title {
+   background-color: #f9f9f9;
+   text-align: center;
+}
+

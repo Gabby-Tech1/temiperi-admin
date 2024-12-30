@@ -1,0 +1,41 @@
+.table_container {
+   padding: 40px;
+   align-items: center;
+   justify-content: center;
+   margin: auto;
+   text-align: center;
+}
+
+.table_container h2 {
+   padding-bottom: 30px;
+}
+
+table {
+   border: solid 1px #ccc;
+   align-items: center;
+   margin: auto auto;
+   overflow: auto;
+   width: 100%;
+   border-spacing: 0;
+   border-collapse: collapse;
+   display: block;
+}
+
+tbody {
+   white-space: no-wrap;
+}
+
+thead tr th {
+   padding: 3px;
+   border: solid 1px #ccc;
+   font-size: 13px;
+}
+
+tbody tr td {
+   border: solid 1px #ccc;
+   padding: 5px;
+}
+
+.table_btn {
+   padding: 20px;
+}

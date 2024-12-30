@@ -1,0 +1,87 @@
+.container {
+   display: flex;
+   gap: 20px;
+   padding: 40px;
+}
+
+.report {
+   text-align: center;
+}
+
+.filter_container {
+   display: flex;
+}
+
+.product_filter_container {
+   display: flex;
+}
+
+label {
+   border: solid 1px #ccc;
+   padding: 2px;
+   font-size: 13px;
+}
+
+.chart_container {
+   display: flex;
+   gap: 20px;
+}
+
+.myChart {
+   border: solid 1px #ccc;
+   padding: 10px;
+}
+
+.best_performing_product {
+   align-items: center;
+   justify-content: center;
+   border: solid 1px #ccc;
+   padding: 5px;
+}
+
+.best_performing_product h4 {
+   font-size: 14px;
+   text-align: center;
+   padding: 5px;
+   padding-bottom: 10px;
+   color: blue;
+}
+
+.best_products {
+   display: grid;
+   gap: 10px;
+   align-items: center;
+   justify-content: center;
+}
+
+.products_details {
+   display: flex;
+   gap: 10px;
+   text-align: center;
+   align-items: center;
+   justify-content: space-between;
+   border: solid 1px red;
+   padding: 5px;
+}
+
+.products_details small {
+   width: 100px;
+   height: 15px;
+   border-radius: 50px;
+   background-color: blueviolet;
+}
+
+.performance_summary {
+   width: 70%;
+   padding: 20px;
+   text-align: start;
+   margin: auto auto;
+}
+
+.performance_summary h3 {
+   margin-bottom: 20px;
+}
+
+.performance_summary p {
+   text-align: start;
+}

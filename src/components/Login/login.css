@@ -1,0 +1,113 @@
+.bg{
+   position: relative;
+   background-image: url('./temiperibackground.png');
+   background-size: cover;
+   background-position: center;
+   
+}
+
+.bg2 {
+   position: absolute;
+   height: 80px;
+   width: 80px;
+   background-color: red;
+   right: 0;
+   border-bottom-left-radius: 180%;
+}
+
+.login_container {
+   display: flex;
+   align-items: center;
+   justify-content: center; 
+   height: 100vh;
+}
+
+.container_left {
+   width: 60%;
+   align-items: center;
+   padding: 20px;
+}
+
+.container_left img {
+   width: 600px;
+   border-radius: 50%;
+}
+
+form h2 {
+   text-align: center;
+   font-weight: 900;
+   font-size: 30px;
+   padding: 20px;
+   align-items: center;
+   justify-content: center;
+   padding-bottom: 5px;
+}
+
+
+.login_details {
+   text-align: center;
+   padding: 20px;
+}
+.container_right {
+   border-left: solid 1px #ccc;
+   padding: 20px;
+   width: 40%;
+}
+
+.container_right form{
+   width: 80%;
+   gap: 20px;
+}
+
+label {
+   display: flex;
+   flex-direction: column;
+   padding: 8px 16px;
+   gap: 10px;
+   color: #4702e7;
+   font-size: 20px;
+}
+
+label input {
+   padding: 10px;
+   border: solid 1px #4702e7;
+   border-left: 0;
+   border-right: 0;
+}
+
+.remember_me {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   padding: 20px 16px;
+}
+
+
+
+.forget_password small{
+   color: red;
+}
+
+.remember_input {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 5px;
+}
+
+.form_btn {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   text-align: center;
+   margin: auto auto;
+}
+
+p {
+   display: flex;
+   gap: 10px;
+   align-items: center;
+   justify-content: center;
+   padding: 20px;
+   cursor: pointer;
+}

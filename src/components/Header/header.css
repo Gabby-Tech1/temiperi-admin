@@ -1,0 +1,199 @@
+.header {
+   padding: 0px 40px;
+   align-items: center;
+   justify-content: center;
+}
+
+nav {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   border-bottom: solid 1px #3a2efe;
+}
+
+ a p {
+   color: black;
+ }
+
+ 
+ a p:hover {
+   text-decoration: underline;
+ }
+
+.logo img {
+   width: 60px;
+}
+
+.nav_menu {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 20px;
+}
+
+
+
+
+.notification {
+   display: flex;
+   position: relative;
+}
+
+.message {
+   position: relative;
+   display: flex;
+}
+
+ /* .noti_text{
+   position: absolute;
+   background-color: black;
+   color: white;
+   padding: 3px 5px;
+   border-radius: 1px;
+   font-size: 8px;
+   left: 25px;
+   top: -3px;
+} */
+
+.message .noti_text {
+   position: absolute;
+   min-height: 5px;
+   min-width: 5px;
+   padding: 1px;
+   background-color: black;
+   color: white;
+   border-radius: 3px;
+   top: -8px;
+   right: -2px;
+}
+.notification img {
+   width: 30px;
+   margin: 0 4px;
+   background-color: #4d4d4d56;
+   padding: 8px;
+   border-radius: 50%;
+}
+
+/* =============== header date ================ */
+.date {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   padding: 10px 0;
+   border-bottom: solid 1px #3a2efe;
+}
+
+.date_time, .month_year {
+   display: flex;
+   gap: 10px;
+   color: #3a2efe;
+}
+
+/* ================== cards ============ */
+
+.cards_container {
+   display: grid;
+   grid-template-columns: repeat(4, 1fr);
+   gap: 10px;
+   align-items: center;
+   justify-content: center;
+   padding: 25px 0;
+}
+
+.card {
+   padding: 10px;
+   border-radius: 10px;
+   transition: ease-in-out 300ms;
+   position: relative;
+   box-shadow: 0px 7px 7px 0 #ccc;
+}
+
+.card img {
+   width: 40px;
+}
+
+.card h3 {
+   font-size: 16px;
+}
+
+#sales {
+   background-color: #3a2efe;
+   color: white;
+}
+
+#sales img, #purchase img, #expense img, #profit img {
+   background-color: white;
+   padding: 10px;
+   border-radius: 50%;
+}
+
+.total_sales{
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   position: relative;
+   padding: 5px;
+   gap: 15px;
+}
+
+.total_sales > div p {
+   text-align: end;
+   padding: 3px 0;
+}
+
+.sales_percent p{
+   font-size: 12px;
+}
+
+.percent h4 {
+   width: 20%;
+   text-align: center;
+   background-color: white;
+   color: #3a2efe;
+   border-radius: 50%;
+   padding: 16px 0;
+   position: absolute;
+   border: solid 1px #3a2efe;
+   right: -15px;
+   bottom: -55px;
+}
+
+small {
+   font-size: 12px;
+   color: black;
+   padding: 5px;
+}
+
+#purchase {
+   background-color: black;
+   color: white;
+}
+
+#purchase h4 {
+   color: black;
+}
+
+#purchase small {
+   color: rgb(207, 206, 206);
+}
+
+#expense {
+   background-color: red;
+}
+
+#expense h4 {
+   color: red;
+}
+
+#expense small {
+color: white;
+}
+
+#profit {
+   background-color: #c61dff;
+   color: white;
+}
+
+#profit h3, #profit h4 {
+   color: #02ff0b;
+}

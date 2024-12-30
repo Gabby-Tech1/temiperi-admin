@@ -1,0 +1,55 @@
+.report_container {
+   display: flex;
+   gap: 20px;
+   padding: 40px;
+   margin: 50px auto;
+}
+
+.recent_reports{
+   width: 250px;
+   padding: 20px 40px;
+   box-shadow: 0px 2px 2px 2px #000000a0;
+}
+
+.report_time {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+}
+
+.recent_reports h3 {
+   text-align: center;
+   
+}
+
+.recent_report_title {
+   text-align: start;
+   font-size: 18px;
+   font-weight: 600;
+   color: blue;
+}
+
+.report_dis {
+   padding: 10px;
+   border-bottom: solid 1px #ccc;
+}
+
+.report_body {
+   width: 100%;
+   display: grid;
+   gap: 10px;
+}
+
+.report_body input {
+   padding: 5px;
+}
+
+input::placeholder {
+   font-size: 14px;
+   font-weight: 600;
+}
+
+.report_body textarea {
+   padding: 20px;
+   height: 50vh;
+}

@@ -1,0 +1,59 @@
+.addproduct_container {
+   display: flex;
+   gap: 20px;
+   padding: 40px;
+   justify-content: center;
+}
+
+.addproduct {
+   background-color: #c9c6cb4e;
+   padding: 10px;
+   display: flex;
+}
+
+ h2, p {
+   text-align: center;
+}
+
+p {
+   padding-bottom: 10px;
+}
+
+label {
+   border: solid 1px #ccc;
+   padding: 10px;
+   gap: 10px;
+   margin: 10px;
+}
+
+select{
+   padding: 5px;
+   border: none;
+}
+
+label input {
+   border: none;
+   padding: 5px;
+}
+
+.btn {
+   margin: auto auto;
+   width: 140px;
+}
+
+table {
+   padding: 40px;
+}
+
+thead tr th {
+   border-right: solid 1px #ccc;
+   padding: 10px;
+}
+
+thead tr th:nth-last-child(10){
+   border-right: none;
+}
+
+caption {
+   padding-top: 20px;
+}
