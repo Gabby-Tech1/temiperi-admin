@@ -8,7 +8,7 @@ const Orders = () => {
   // Fetch orders from API
   const fetchOrders = async () => {
     try {
-      const response = await axios.get("https://temiperi-backend.onrender.com/temiperi/orders");
+      const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/orders");
       if (response.data) {
         setOrderList(response.data.data);
         console.log("Orders fetched successfully");

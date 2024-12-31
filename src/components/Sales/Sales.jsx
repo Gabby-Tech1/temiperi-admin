@@ -7,7 +7,7 @@ const Sales = () => {
   const [percentage, setPercentage] = useState(0);
 
   const devUrl = "http://localhost:4000";
-  const prodUrl = "https://temiperi-backend.onrender.com";
+  const prodUrl = "https://temiperi-stocks-backend.onrender.com/temiperi";
   const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
 
   useEffect(() => {

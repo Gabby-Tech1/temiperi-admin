@@ -8,7 +8,7 @@ import axios from "axios";
 const AddProduct = () => {
   // Determine base URL dynamically
   const devUrl = "http://localhost:4000/temiperi/products";
-  const prodUrl = "https://temiperi-backend.onrender.com/temiperi/products";
+  const prodUrl = "https://temiperi-stocks-backend.onrender.com/temiperi/products";
   const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
 
   // State for form fields

@@ -5,7 +5,7 @@ import { asset } from "../../assets/assets";
 const TotalProduct = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const devUrl = "http://localhost:4000/temiperi";
-  const prodUrl = "https://temiperi-backend.onrender.com/temiperi";
+  const prodUrl = "https://temiperi-stocks-backend.onrender.com/temiperi";
   const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
 
   useEffect(() => {

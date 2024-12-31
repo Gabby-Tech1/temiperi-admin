@@ -30,7 +30,7 @@ const Products = () => {
   // Fetch products
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('https://temiperi-backend.onrender.com/temiperi/products');
+      const response = await axios.get('https://temiperi-stocks-backend.onrender.com/temiperi/products');
       const productsData = response.data.products;
       setProducts(productsData);
       setFilteredProducts(productsData);
