@@ -9,8 +9,8 @@ const Orders = () => {
   const fetchOrders = async () => {
     try {
       const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/orders");
-      if (response.data) {
-        setOrderList(response.data.data);
+      if (response?.data) {
+        setOrderList(response?.data?.data || []);
         console.log("Orders fetched successfully");
       } else {
         console.log("No orders found");
@@ -41,24 +41,24 @@ const Orders = () => {
           </thead>
           <tbody>
             {orderList?.map((order) => (
-              <tr key={order._id}>
-                <td>{order.invoiceNumber}</td>
-                <td>{order.customerName}</td>
-                <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+              <tr key={order?._id}>
+                <td>{order?.invoiceNumber}</td>
+                <td>{order?.customerName}</td>
+                <td>{new Date(order?.createdAt).toLocaleDateString()}</td>
                 <td>
                   <ul>
-                    {order.items.map((item, index) => (
+                    {order?.items?.map((item, index) => (
                       <li key={index}>
-                        {item.quantity} x {item.description || "N/A"} @ $
-                        {item.price}
+                        {item?.quantity} x {item?.description || "N/A"} @ $
+                        {item?.price}
                       </li>
                     ))}
                   </ul>
                 </td>
                 <td>
                   $
-                  {order.items.reduce(
-                    (total, item) => total + item.quantity * item.price,
+                  {order?.items?.reduce(
+                    (total, item) => total + (item?.quantity || 0) * (item?.price || 0),
                     0
                   )}
                 </td>

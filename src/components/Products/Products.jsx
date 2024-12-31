@@ -31,12 +31,12 @@ const Products = () => {
   const fetchProducts = async () => {
     try {
       const response = await axios.get('https://temiperi-stocks-backend.onrender.com/temiperi/products');
-      const productsData = response.data.products;
+      const productsData = response?.data?.products || [];
       setProducts(productsData);
       setFilteredProducts(productsData);
 
       // Extract unique categories
-      const uniqueCategories = [...new Set(productsData.map(product => product.category))];
+      const uniqueCategories = [...new Set(productsData?.map(product => product?.category))];
       setCategories(uniqueCategories);
 
       setLoading(false);
@@ -58,7 +58,7 @@ const Products = () => {
     // Filter by category
     if (selectedCategory !== "all") {
       result = result.filter(
-        (product) => product.category === selectedCategory
+        (product) => product?.category === selectedCategory
       );
     }
 
@@ -67,8 +67,8 @@ const Products = () => {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter(
         (product) =>
-          product.name.toLowerCase().includes(searchLower) ||
-          product.category.toLowerCase().includes(searchLower)
+          product?.name?.toLowerCase().includes(searchLower) ||
+          product?.category?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -79,11 +79,11 @@ const Products = () => {
   const handleEditClick = (product) => {
     setEditingProduct(product);
     setEditForm({
-      name: product.name,
-      category: product.category,
-      retail_price: product.price.retail_price,
-      whole_sale_price: product.price.whole_sale_price,
-      quantity: product.quantity,
+      name: product?.name,
+      category: product?.category,
+      retail_price: product?.price?.retail_price,
+      whole_sale_price: product?.price?.whole_sale_price,
+      quantity: product?.quantity,
     });
     setShowEditModal(true);
   };
@@ -110,20 +110,20 @@ const Products = () => {
         name: editForm.name,
         category: editForm.category,
         price: {
-          retail_price: parseFloat(editForm.retail_price),
-          whole_sale_price: parseFloat(editForm.whole_sale_price)
+          retail_price: parseFloat(editForm?.retail_price),
+          whole_sale_price: parseFloat(editForm?.whole_sale_price)
         },
         quantity: parseInt(editForm.quantity)
       };
 
       const response = await api.patch(
-        `/products/?id=${editingProduct._id}`,
+        `/products/?id=${editingProduct?._id}`,
         updateData
       );
 
-      if (response.data) {
+      if (response?.data) {
         const updatedProducts = products.map((prod) =>
-          prod._id === editingProduct._id ? response.data : prod
+          prod._id === editingProduct?._id ? response?.data : prod
         );
         setProducts(updatedProducts);
 
@@ -160,9 +160,9 @@ const Products = () => {
     try {
       const loadingToast = toast.loading("Deleting product...");
 
-      await api.delete(`/delete-product?id=${productToDelete._id}`);
+      await api.delete(`/delete-product?id=${productToDelete?._id}`);
 
-      setProducts(products.filter((prod) => prod._id !== productToDelete._id));
+      setProducts(products.filter((prod) => prod?._id !== productToDelete?._id));
       setShowDeleteModal(false);
       setProductToDelete(null);
 
@@ -231,13 +231,13 @@ const Products = () => {
                 <tbody>
                   {filteredProducts.map((product) => (
                     <tr key={product._id}>
-                      <td>{product.name}</td>
-                      <td>{product.category}</td>
-                      <td>GH₵{product.price.retail_price}</td>
-                      <td>GH₵{product.price.whole_sale_price}</td>
-                      <td>{product.quantity}</td>
+                      <td>{product?.name}</td>
+                      <td>{product?.category}</td>
+                      <td>GH₵{product?.price?.retail_price}</td>
+                      <td>GH₵{product?.price?.whole_sale_price}</td>
+                      <td>{product?.quantity}</td>
                       <td>
-                        {new Date(product.createdAt).toLocaleDateString()}
+                        {new Date(product?.createdAt).toLocaleDateString()}
                       </td>
                       <td>
                         <div className="action-buttons">

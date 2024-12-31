@@ -13,14 +13,14 @@ const TotalProduct = () => {
       try {
         // Fix the URL string formatting
         const response = await axios.get(`${baseUrl}/products`);
-        const products = response.data.products;
+        const products = response?.data?.products || [];
 
         console.log("I am working");
 
         // Calculate total product quantity correctly
         const totalQuantity = products.reduce((total, product) => {
-          return total + product.quantity; // Return accumulated total
-        }, 0); // Initialize with 0
+          return total + (product?.quantity || 0);
+        }, 0);
 
         setTotalProducts(totalQuantity); // Update state with the correct value
       } catch (error) {

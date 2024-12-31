@@ -14,7 +14,7 @@ const Sales = () => {
     const fetchInvoices = async () => {
       try {
         const response = await axios.get(`${baseUrl}/invoices`);
-        const invoices = response.data.data;
+        const invoices = response?.data?.data || [];
 
         // Get the current time and calculate 24 hours ago
         const now = new Date();
@@ -22,12 +22,12 @@ const Sales = () => {
 
         // Filter invoices created within the last 24 hours
         const recentInvoices = invoices.filter((invoice) => {
-          return new Date(invoice.createdAt) > last24Hours;
+          return new Date(invoice?.createdAt) > last24Hours;
         }, 0);
 
         // Calculate total sales for recent invoices
         const totalSales = recentInvoices.reduce(
-          (total, invoice) => total + invoice.totalAmount,
+          (total, invoice) => total + (invoice?.totalAmount || 0),
           0
         );
         setSales(totalSales);
