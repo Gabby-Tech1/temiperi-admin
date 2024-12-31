@@ -40,7 +40,7 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("https://temiperi-backend.onrender.com/temiperi/products", productData);
+      const response = await axios.post("https://temiperi-stocks-backend.onrender.com/temiperi/products", productData);
       alert("Product added successfully!");
       console.log(response.data);
     } catch (error) {
