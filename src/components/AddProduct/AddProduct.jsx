@@ -40,7 +40,7 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(baseUrl, productData);
+      const response = await axios.post(prodUrl, productData);
       alert("Product added successfully!");
       console.log(response.data);
     } catch (error) {

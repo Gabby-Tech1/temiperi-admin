@@ -6,7 +6,8 @@ const prodUrl = "https://temiperi-backend.onrender.com/temiperi";
 const api = axios.create({
   baseURL: window.location.hostname === "localhost" ? devUrl : prodUrl,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': '*'
   }
 });
 

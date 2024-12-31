@@ -181,7 +181,7 @@ const Analysis = () => {
       </div>
 
       {/* ==================== brife Report Summary ============= */}
-      <div className="performance_summary">
+      {/* <div className="performance_summary">
         <h3>Performance Summary</h3>
         <p>
           <small>1. </small>Lorem ipsum dolor sit amet consectetur adipisicing
@@ -203,7 +203,7 @@ const Analysis = () => {
           repellendus repellat magnam, eaque iste odit provident sunt similique
           inventore, quibusdam consequatur, enim ipsa?
         </p>
-      </div>
+      </div> */}
 
       <Footer />
     </div>
