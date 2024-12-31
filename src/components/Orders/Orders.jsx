@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import "./order.css";
 import axios from "axios";
 
-const Orders = ({ url }) => {
+const Orders = () => {
   const [orderList, setOrderList] = useState([]);
 
   // Fetch orders from API
   const fetchOrders = async () => {
     try {
-      const response = await axios.get(`${url}/orders`);
+      const response = await axios.get("https://temiperi-backend.onrender.com/temiperi/orders");
       if (response.data) {
         setOrderList(response.data.data);
         console.log("Orders fetched successfully");

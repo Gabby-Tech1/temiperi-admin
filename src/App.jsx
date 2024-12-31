@@ -12,9 +12,9 @@ import Footer from "./components/Footer/Footer";
 import { useLocation } from "react-router-dom";
 
 const App = ({ data }) => {
-  const devUrl = "http://localhost:4000/temiperi";
-  const prodUrl = "https://temiperi-backend.onrender.com/temiperi";
-  const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
+  // const devUrl = "http://localhost:4000/temiperi";
+  // const prodUrl = "https://temiperi-backend.onrender.com/temiperi";
+  // const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
 
   const [showLogin, setShowLogin] = useState(true);
 
@@ -35,13 +35,13 @@ const App = ({ data }) => {
       <div>
         {!location.pathname.includes(forbiddenRoutes) && <Header />}
         <Routes>
-          <Route path="/" element={<Analysis url={baseUrl} />} />
-          <Route path="/product" element={<Products url={baseUrl} />} />
-          <Route path="/addproduct" element={<AddProduct url={baseUrl} />} />
-          <Route path="/settings" element={<Settings url={baseUrl} />} />
-          <Route path="/report" element={<Report url={baseUrl} />} />
-          <Route path="/orders" element={<Orders url={baseUrl} />} />
-          <Route path="/login" element={<Login url={baseUrl} />} />
+          <Route path="/" element={<Analysis />} />
+          <Route path="/product" element={<Products />} />
+          <Route path="/addproduct" element={<AddProduct />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/report" element={<Report />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
         {/* <Footer /> */}
       </div>
