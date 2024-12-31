@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../../api/axios";
 import { Sidebar } from "../Sidebar/Sidebar";
+import axios from 'axios';
 import "./product.css";
 import { icons } from "../../icons/heroIcons";
 import { toast } from "react-toastify";
@@ -29,7 +30,7 @@ const Products = () => {
   // Fetch products
   const fetchProducts = async () => {
     try {
-      const response = await api.get('/products');
+      const response = await axios.get('https://temiperi-backend.onrender.com/temiperi/products');
       const productsData = response.data.products;
       setProducts(productsData);
       setFilteredProducts(productsData);
