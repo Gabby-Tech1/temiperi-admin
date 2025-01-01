@@ -1,6 +1,7 @@
 .card {
   padding: 20px;
   background: white;
+  border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -38,7 +39,7 @@
 
 .filter-btn {
   padding: 8px 16px;
-  background-color: green;
+  background-color: blue;
   border: 1px solid #ddd;
   border-radius: 4px;
   cursor: pointer;
@@ -47,7 +48,7 @@
 }
 
 .filter-btn:hover {
-  background-color: geen;
+  background-color: blue;
 }
 
 .filter-btn.active {
@@ -91,7 +92,7 @@
 
 small {
   display: block;
-  color: #666;
+  color: white;
   margin-top: 10px;
   font-style: italic;
 }

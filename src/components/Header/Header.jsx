@@ -80,7 +80,7 @@ const Header = ({ showLogin, setShowLogin }) => {
           </div>
           <small>Last 24 hours</small>
         </div>
-        <div className="card" id="profit">
+        {/* <div className="card" id="profit">
           <img src={asset.profit} alt="" />
           <div className="total_sales">
             <div>
@@ -96,7 +96,7 @@ const Header = ({ showLogin, setShowLogin }) => {
             </div>
           </div>
           <small>Last 24 hours</small>
-        </div>
+        </div> */}
       </div>
     </div>
   );

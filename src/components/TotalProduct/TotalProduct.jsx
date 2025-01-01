@@ -12,7 +12,7 @@ const TotalProduct = () => {
     const fetchProducts = async () => {
       try {
         // Fix the URL string formatting
-        const response = await axios.get(`${prodUrl }/products`);
+        const response = await axios.get(`${prodUrl}/products`);
         const products = response?.data?.products || [];
 
         console.log("I am working");
@@ -24,7 +24,7 @@ const TotalProduct = () => {
 
         setTotalProducts(totalQuantity); // Update state with the correct value
       } catch (error) {
-        console.error("Error fetching invoices:", error);
+        console.error("Error fetching products:", error);
       }
     };
 

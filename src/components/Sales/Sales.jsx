@@ -132,13 +132,13 @@ const Sales = () => {
     <div>
       <div className="card" id="sales">
         <img src={asset.sale} alt="Sales" />
-        <div className="sales-header">
-          <h3>{isCustomDate ? "Custom Date Range Sales" : "24-Hour Sales"}</h3>
+        <div className="p-5">
+          <h3 className="text-white">{isCustomDate ? "Custom Date Range Sales" : "24-Hour Sales"}</h3>
           
-          <div className="date-filter">
+          <div className="flex flex-col gap-5">
             <button 
               onClick={calculateSalesForTimeWindow}
-              className={`filter-btn ${!isCustomDate ? 'active' : ''} `}
+              className={`filter-btn ${!isCustomDate ? 'active' : ''}`}
             >
               Last 24 Hours
             </button>
@@ -147,15 +147,17 @@ const Sales = () => {
               <input
                 type="date"
                 value={startDate}
+                className="text-slate-500" 
                 onChange={(e) => setStartDate(e.target.value)}
-                className="date-input"
+                
               />
               <span>to</span>
               <input
                 type="date"
                 value={endDate}
+                className = "text-slate-500"
                 onChange={(e) => setEndDate(e.target.value)}
-                className="date-input"
+                
               />
               <button 
                 onClick={calculateSalesForDateRange}
