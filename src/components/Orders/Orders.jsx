@@ -4,14 +4,21 @@ import axios from "axios";
 
 const Orders = () => {
   const [orderList, setOrderList] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [isCustomDate, setIsCustomDate] = useState(false);
 
   // Fetch orders from API
   const fetchOrders = async () => {
     try {
       const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/orders");
       if (response?.data) {
-        setOrderList(response?.data?.data || []);
-        console.log("Orders fetched successfully");
+        const allOrders = response?.data?.data || [];
+        setOrderList(allOrders);
+        
+        // By default, show last 24 hours
+        filterOrdersByTimeWindow();
       } else {
         console.log("No orders found");
       }
@@ -20,13 +27,96 @@ const Orders = () => {
     }
   };
 
+  // Filter orders by time window (last 24 hours by default)
+  const filterOrdersByTimeWindow = () => {
+    const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    const recentOrders = orderList.filter((order) => {
+      const orderDate = new Date(order?.createdAt);
+      return orderDate >= last24Hours && orderDate <= now;
+    });
+
+    setFilteredOrders(recentOrders);
+    setIsCustomDate(false);
+    setStartDate("");
+    setEndDate("");
+  };
+
+  // Filter orders by custom date range
+  const filterOrdersByDateRange = () => {
+    if (!startDate || !endDate) return;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // Include the entire end date
+
+    const filteredOrders = orderList.filter((order) => {
+      const orderDate = new Date(order?.createdAt);
+      return orderDate >= start && orderDate <= end;
+    });
+
+    setFilteredOrders(filteredOrders);
+    setIsCustomDate(true);
+  };
+
   useEffect(() => {
+    // Fetch immediately
     fetchOrders();
+
+    // Set up interval to fetch every 5 minutes
+    const intervalId = setInterval(fetchOrders, 5 * 60 * 1000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
+
+  // Update filtered orders when orderList changes
+  useEffect(() => {
+    if (!isCustomDate) {
+      filterOrdersByTimeWindow();
+    }
+  }, [orderList]);
 
   return (
     <div className="table_container">
-      <h2 className="font-bold">Recent Orders</h2>
+      <div className="header-section">
+        <h2 className="font-bold">
+          {isCustomDate ? "Custom Date Range Orders" : "Recent Orders (Last 24 Hours)"}
+        </h2>
+        
+        <div className="date-filter">
+          <button 
+            onClick={filterOrdersByTimeWindow}
+            className={`filter-btn ${!isCustomDate ? 'active' : ''}`}
+          >
+            Last 24 Hours
+          </button>
+          
+          <div className="date-inputs">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="date-input"
+            />
+            <span>to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="date-input"
+            />
+            <button 
+              onClick={filterOrdersByDateRange}
+              disabled={!startDate || !endDate}
+              className="filter-btn"
+            >
+              Filter
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="table table-xs">
@@ -40,11 +130,11 @@ const Orders = () => {
             </tr>
           </thead>
           <tbody>
-            {orderList?.map((order) => (
+            {filteredOrders.map((order) => (
               <tr key={order?._id}>
                 <td>{order?.invoiceNumber}</td>
                 <td>{order?.customerName}</td>
-                <td>{new Date(order?.createdAt).toLocaleDateString()}</td>
+                <td>{new Date(order?.createdAt).toLocaleString()}</td>
                 <td>
                   <ul>
                     {order?.items?.map((item, index) => (
@@ -60,7 +150,7 @@ const Orders = () => {
                   {order?.items?.reduce(
                     (total, item) => total + (item?.quantity || 0) * (item?.price || 0),
                     0
-                  )}
+                  ).toFixed(2)}
                 </td>
               </tr>
             ))}
