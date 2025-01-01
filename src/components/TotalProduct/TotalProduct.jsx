@@ -12,7 +12,7 @@ const TotalProduct = () => {
     const fetchProducts = async () => {
       try {
         // Fix the URL string formatting
-        const response = await axios.get(`${baseUrl}/products`);
+        const response = await axios.get(`${prodUrl }/products`);
         const products = response?.data?.products || [];
 
         console.log("I am working");

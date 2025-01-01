@@ -13,7 +13,7 @@ const Sales = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const response = await axios.get(`${baseUrl}/invoices`);
+        const response = await axios.get(`https://temiperi-stocks-backend.onrender.com/temiperi/invoices`);
         const invoices = response?.data?.data || [];
 
         // Get the current time and calculate 24 hours ago
@@ -22,9 +22,14 @@ const Sales = () => {
 
         // Filter invoices created within the last 24 hours
         const recentInvoices = invoices.filter((invoice) => {
-          return new Date(invoice?.createdAt) > last24Hours;
-        }, 0);
+          const invoiceDate = new Date(invoice?.createdAt);
+          return invoiceDate <= last24Hours
+        });
 
+        const totalAmount = invoices.reduce(
+          (total, invoice) => total + (invoice?.totalAmount || 0),
+          0
+        );
         // Calculate total sales for recent invoices
         const totalSales = recentInvoices.reduce(
           (total, invoice) => total + (invoice?.totalAmount || 0),
@@ -32,18 +37,37 @@ const Sales = () => {
         );
         setSales(totalSales);
 
-        // Calculate percentage increase (dummy example, replace with actual logic)
-        const previousSales = 1000; // Example previous sales
-        const percentageIncrease =
-          ((totalSales - previousSales) / previousSales) * 100;
-        setPercentage(percentageIncrease.toFixed(2));
+        // Calculate percentage change from previous period
+        const previousPeriodStart = new Date(last24Hours.getTime() - 24 * 60 * 60 * 1000);
+        const previousInvoices = invoices.filter((invoice) => {
+          const invoiceDate = new Date(invoice?.createdAt);
+          return invoiceDate >= previousPeriodStart;
+        });
+
+        const previousTotal = previousInvoices.reduce(
+          (total, invoice) => total + (invoice?.totalAmount || 0),
+          0
+        );
+
+        const percentageChange = previousTotal === 0 
+          ? 0 
+          : ((totalSales - previousTotal) / totalAmount) * 100;
+        
+        setPercentage(percentageChange.toFixed(2));
       } catch (error) {
         console.error("Error fetching invoices:", error);
       }
     };
 
+    // Fetch immediately
     fetchInvoices();
-  }, []);
+
+    // Set up interval to fetch every 5 minutes
+    const intervalId = setInterval(fetchInvoices, 5 * 60 * 1000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [baseUrl]);
 
   return (
     <div>
