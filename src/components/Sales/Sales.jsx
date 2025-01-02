@@ -132,34 +132,36 @@ const Sales = () => {
     <div>
       <div className="card" id="sales">
         <img src={asset.sale} alt="Sales" />
-        <div className="p-5">
+        <div className="sales-content">
           <h3 className="text-white">{isCustomDate ? "Custom Date Range Sales" : "24-Hour Sales"}</h3>
           
-          <div className="flex flex-col gap-5">
+          <div className="filter-section">
             <button 
+              type="button"
               onClick={calculateSalesForTimeWindow}
               className={`filter-btn ${!isCustomDate ? 'active' : ''}`}
             >
               Last 24 Hours
             </button>
             
-            <div className="flex gap-5 justfiy-center items-center">
-              <input
-                type="date"
-                value={startDate}
-                className="text-slate-500" 
-                onChange={(e) => setStartDate(e.target.value)}
-                
-              />
-              <span>to</span>
-              <input
-                type="date"
-                value={endDate}
-                className = "text-slate-500"
-                onChange={(e) => setEndDate(e.target.value)}
-                
-              />
+            <div className="date-range">
+              <div className="date-input-wrapper">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <span className="date-separator">to</span>
+              <div className="date-input-wrapper">
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
               <button 
+                type="button"
                 onClick={calculateSalesForDateRange}
                 disabled={!startDate || !endDate}
                 className="filter-btn"
@@ -168,31 +170,31 @@ const Sales = () => {
               </button>
             </div>
           </div>
-        </div>
 
-        <div className="total_sales">
-          <div>
-            <p>Total Sales</p>
-            <h3>GH {sales.toFixed(2)}</h3>
-          </div>
+          <div className="total_sales">
+            <div>
+              <p>Total Sales</p>
+              <h3>GH {sales.toFixed(2)}</h3>
+            </div>
 
-          <div className="sales_percent">
-            <p>
-              {percentage >= 0 ? "Increase" : "Decrease"} in sales by
-            </p>
-            <div className={`${percentage >= 0 ? 'positive' : 'negative'}`}>
-              <div className="percent"> 
-                <h4 className = "percent">{Math.abs(percentage)}%</h4>
+            <div className="sales_percent">
+              <p>
+                {percentage >= 0 ? "Increase" : "Decrease"} in sales by
+              </p>
+              <div className={`${percentage >= 0 ? 'positive' : 'negative'}`}>
+                <div className="percent"> 
+                  <h4 className="percent">{Math.abs(percentage)}%</h4>
+                </div>
               </div>
             </div>
           </div>
+          <small>
+            {isCustomDate 
+              ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+              : "Last 24 hours"
+            }
+          </small>
         </div>
-        <small>
-          {isCustomDate 
-            ? `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
-            : "Last 24 hours"
-          }
-        </small>
       </div>
     </div>
   );

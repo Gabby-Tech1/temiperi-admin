@@ -33,16 +33,19 @@ const TotalProduct = () => {
 
   return (
     <div>
-      <div className="h-[29rem] rounded-md" id="purchase">
-        <img className ="" src={asset.purchase} alt="" />
+      <div className="card" id="purchase">
+        <img src={asset.purchase} alt="" />
         <div className="total_sales">
           <div>
-            <h3 className="text-white">Total Stock</h3>
-            <p className="text-white">{totalProducts}</p>
+            <h3>Total Stock</h3>
+            <p>{totalProducts}</p>
           </div>
 
           <div className="sales_percent">
             <p>Total Stock Available</p>
+            <div className="percent">
+              <h4>{totalProducts}</h4>
+            </div>
           </div>
         </div>
         <small>Last 24 hours</small>

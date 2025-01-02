@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./header.css";
 import { asset } from "../../assets/assets";
 import { Link } from "react-router-dom";
@@ -11,6 +11,14 @@ const Header = ({ showLogin, setShowLogin }) => {
   const [percentage, setPercentage] = useState(0);
   const [result, setResult] = useState(0);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDate(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const handleProfit = () => {
     console.log(setResult(Number(sales) + Number(expense)));
   };
@@ -22,17 +30,17 @@ const Header = ({ showLogin, setShowLogin }) => {
           <img src={asset.logo} alt="" />
         </div>
 
-         <div className="nav_menu">
-            <Link to='/product'>
-               <p className='stock'>Stock</p>
-            </Link>
-            <Link to='/orders'>
-               <p className='ord'>Orders</p>
-            </Link>
-            <Link to='/report'>
-               <p className='rep'>Report</p>
-            </Link>
-         </div>
+        <div className="nav_menu">
+          <Link to="/product">
+            <p className="stock">Stock</p>
+          </Link>
+          <Link to="/orders">
+            <p className="ord">Orders</p>
+          </Link>
+          <Link to="/report">
+            <p className="rep">Report</p>
+          </Link>
+        </div>
 
         <div className="notification">
           <div className="message">
@@ -44,15 +52,15 @@ const Header = ({ showLogin, setShowLogin }) => {
       </nav>
 
       {/* ======== date ===== */}
-
       <div className="date">
         <div className="date_time">
-          <p className="time">{date.getHours()}</p>
-          <p className="time">{date.getMinutes()}</p>
+          <p>{date.getHours().toString().padStart(2, '0')}</p>
+          <p>{date.getMinutes().toString().padStart(2, '0')}</p>
+          <p className="seconds">{date.getSeconds().toString().padStart(2, '0')}</p>
         </div>
         <div className="month_year">
-          <p className="">{date.getDate()}</p>
-          <p className="month">{date.getMonth() + 1}</p>
+          <p>{date.getDate().toString().padStart(2, '0')}</p>
+          <p>{(date.getMonth() + 1).toString().padStart(2, '0')}</p>
           <p className="year">{date.getFullYear()}</p>
         </div>
       </div>
@@ -63,7 +71,7 @@ const Header = ({ showLogin, setShowLogin }) => {
         <Sales />
         <TotalProduct />
 
-        <div className="h-[29rem] rounded-md" id="expense">
+        <div className="card" id="expense">
           <img src={asset.expense} alt="" />
           <div className="total_sales">
             <div>
@@ -72,7 +80,7 @@ const Header = ({ showLogin, setShowLogin }) => {
             </div>
 
             <div className="sales_percent">
-              <p>Increase in sales by</p>
+              <p>Increase in expense by</p>
               <div className="percent">
                 <h4>{percentage}%</h4>
               </div>
