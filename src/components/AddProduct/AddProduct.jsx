@@ -53,7 +53,7 @@ const AddProduct = () => {
     <>
       {/* <Header /> */}
       <div>
-        <Orders url={baseUrl} />
+        {/* <Orders url={baseUrl} /> */}
 
         <h2>Add New Products</h2>
         <p>Please enter the product details in the table below</p>
