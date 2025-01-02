@@ -34,10 +34,12 @@ const Orders = () => {
     const now = new Date();
     const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    const recentOrders = orders.filter((order) => {
-      const orderDate = new Date(order?.createdAt);
-      return orderDate >= last24Hours && orderDate <= now;
-    });
+    const recentOrders = orders
+      .filter((order) => {
+        const orderDate = new Date(order?.createdAt);
+        return orderDate >= last24Hours && orderDate <= now;
+      })
+      .sort((a, b) => new Date(b?.createdAt) - new Date(a?.createdAt)); // Sort by date descending
 
     setFilteredOrders(recentOrders);
     setIsCustomDate(false);
@@ -54,10 +56,12 @@ const Orders = () => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999); // Include the entire end date
 
-    const dateFilteredOrders = orderList.filter((order) => {
-      const orderDate = new Date(order?.createdAt);
-      return orderDate >= start && orderDate <= end;
-    });
+    const dateFilteredOrders = orderList
+      .filter((order) => {
+        const orderDate = new Date(order?.createdAt);
+        return orderDate >= start && orderDate <= end;
+      })
+      .sort((a, b) => new Date(b?.createdAt) - new Date(a?.createdAt)); // Sort by date descending
 
     setFilteredOrders(dateFilteredOrders);
     setIsCustomDate(true);
@@ -72,19 +76,21 @@ const Orders = () => {
     }
 
     const query = searchQuery.toLowerCase().trim();
-    const filtered = orders.filter((order) => {
-      const invoiceMatch = order?.invoiceNumber?.toLowerCase().includes(query);
-      const nameMatch = order?.customerName?.toLowerCase().includes(query);
+    const filtered = orders
+      .filter((order) => {
+        const invoiceMatch = order?.invoiceNumber?.toLowerCase().includes(query);
+        const nameMatch = order?.customerName?.toLowerCase().includes(query);
 
-      switch (searchBy) {
-        case "invoice":
-          return invoiceMatch;
-        case "name":
-          return nameMatch;
-        default:
-          return invoiceMatch || nameMatch;
-      }
-    });
+        switch (searchBy) {
+          case "invoice":
+            return invoiceMatch;
+          case "name":
+            return nameMatch;
+          default:
+            return invoiceMatch || nameMatch;
+        }
+      })
+      .sort((a, b) => new Date(b?.createdAt) - new Date(a?.createdAt)); // Sort by date descending
 
     setFilteredOrders(filtered);
   };
@@ -110,65 +116,85 @@ const Orders = () => {
   return (
     <div className="table_container">
       <div className="header-section">
-        <h2 className="font-bold">
-          {isCustomDate ? "Custom Date Range Orders" : "Recent Orders (Last 24 Hours)"}
-        </h2>
-        
-        <div className="search-section">
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Search orders..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="search-input"
-            />
-            <select
-              value={searchBy}
-              onChange={(e) => setSearchBy(e.target.value)}
-              className="search-select"
-            >
-              <option value="all">All</option>
-              <option value="invoice">Invoice Number</option>
-              <option value="name">Customer Name</option>
-            </select>
+        <div className="title-section">
+          <h2 className="font-bold text-2xl mb-2">
+            {isCustomDate ? "Custom Date Range Orders" : "Recent Orders (Last 24 Hours)"}
+          </h2>
+          <div className="order-stats">
+            <p className="text-lg">
+              Total Orders: <span className="font-semibold">{filteredOrders.length}</span>
+            </p>
+            <p className="text-lg p-1">
+              Total Amount: <span className="font-semibold">GHC
+                {filteredOrders.reduce((total, order) => {
+                  const orderTotal = order?.items?.reduce(
+                    (sum, item) => sum + (item?.quantity || 0) * (item?.price || 0),
+                    0
+                  );
+                  return  total + orderTotal;
+                }, 0).toFixed(2)}
+              </span>
+            </p>
           </div>
         </div>
-        
-        <div className="date-filter">
-          <button 
-            onClick={() => filterOrdersByTimeWindow()}
-            className={`filter-btn ${!isCustomDate ? 'active' : ''}`}
-          >
-            Last 24 Hours
-          </button>
+
+        <div className="controls-section">
+          <div className="search-section">
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="Search orders..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="search-input"
+              />
+              <select
+                value={searchBy}
+                onChange={(e) => setSearchBy(e.target.value)}
+                className="search-select"
+              >
+                <option value="all">All</option>
+                <option value="invoice">Invoice Number</option>
+                <option value="name">Customer Name</option>
+              </select>
+            </div>
+          </div>
           
-          <div className="date-inputs">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="date-input"
-            />
-            <span>to</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="date-input"
-            />
-            <button 
-              onClick={filterOrdersByDateRange}
-              disabled={!startDate || !endDate}
-              className="filter-btn"
+          <div className="date-filter">
+            <button
+              onClick={() => filterOrdersByTimeWindow()}
+              className={`filter-btn ${!isCustomDate ? 'active' : ''}`}
             >
-              Filter
+              Last 24 Hours
             </button>
+            
+            <div className="flex items-center justify-center gap-4 p-4 ">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="date-input"
+              />
+              <span className="date-separator">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="date-input"
+              />
+              <button
+                onClick={filterOrdersByDateRange}
+                disabled={!startDate || !endDate}
+                className="filter-btn"
+              >
+                Filter
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="table-section">
         <table className="table table-xs">
           <thead>
             <tr>
