@@ -34,7 +34,7 @@ const TotalProduct = () => {
   return (
     <div>
       <div className="h-[29rem] rounded-md" id="purchase">
-        <img src={asset.purchase} alt="" />
+        <img className ="" src={asset.purchase} alt="" />
         <div className="total_sales">
           <div>
             <h3 className="text-white">Total Stock</h3>
