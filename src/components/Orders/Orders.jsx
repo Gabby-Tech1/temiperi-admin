@@ -292,7 +292,7 @@ const Orders = () => {
                 <h4 className="font-semibold mb-2">Edit Order Items</h4>
                 {editingOrder.items.map((item, index) => (
                   <div key={index} className="flex items-center gap-4 mb-2">
-                    <p className="flex-1">{item.name}</p>
+                    <p className="flex-1">{item.description || item.name}</p>
                     <input
                       type="number"
                       value={item.quantity}
@@ -333,7 +333,7 @@ const Orders = () => {
                   <tbody>
                     {order.items.map((item, index) => (
                       <tr key={index}>
-                        <td className="py-1">{item.name}</td>
+                        <td className="py-1">{item.description || item.name}</td>
                         <td className="py-1">{item.quantity}</td>
                         <td className="py-1">GHC {item.price}</td>
                         <td className="py-1">GHC {(item.quantity * item.price).toFixed(2)}</td>
