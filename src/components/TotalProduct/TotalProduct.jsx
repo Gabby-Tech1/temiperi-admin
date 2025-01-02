@@ -1,35 +1,34 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { asset } from "../../assets/assets";
+import { useOrderContext } from "../../context/OrderContext";
 
 const TotalProduct = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const devUrl = "http://localhost:4000/temiperi";
   const prodUrl = "https://temiperi-stocks-backend.onrender.com/temiperi";
   const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
+  const { refreshTrigger } = useOrderContext();
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(`${prodUrl}/products`);
+      const products = response?.data?.products || [];
+
+      // Calculate total product quantity correctly
+      const totalQuantity = products.reduce((total, product) => {
+        return total + (product?.quantity || 0);
+      }, 0);
+
+      setTotalProducts(totalQuantity);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        // Fix the URL string formatting
-        const response = await axios.get(`${prodUrl}/products`);
-        const products = response?.data?.products || [];
-
-        console.log("I am working");
-
-        // Calculate total product quantity correctly
-        const totalQuantity = products.reduce((total, product) => {
-          return total + (product?.quantity || 0);
-        }, 0);
-
-        setTotalProducts(totalQuantity); // Update state with the correct value
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-
     fetchProducts();
-  }, []); // Dependency array ensures this runs only once
+  }, [refreshTrigger]);
 
   return (
     <div>

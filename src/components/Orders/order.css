@@ -9,6 +9,7 @@
 
 .order-stats {
   display: flex;
+  flex-direction: column;
   gap: 30px;
   margin-top: 10px;
   color: #666;

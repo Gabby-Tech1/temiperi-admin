@@ -10,6 +10,7 @@ import Settings from "./components/Settings/Settings";
 import Report from "./components/Reprot/Report";
 import Footer from "./components/Footer/Footer";
 import { useLocation } from "react-router-dom";
+import { OrderProvider } from "./context/OrderContext";
 
 const App = ({ data }) => {
   // const devUrl = "http://localhost:4000/temiperi";
@@ -31,7 +32,7 @@ const App = ({ data }) => {
     }
   }, []);
   return (
-    <>
+    <OrderProvider>
       <div>
         {!location.pathname.includes(forbiddenRoutes) && <Header />}
         <Routes>
@@ -45,7 +46,7 @@ const App = ({ data }) => {
         </Routes>
         {/* <Footer /> */}
       </div>
-    </>
+    </OrderProvider>
   );
 };
 

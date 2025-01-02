@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { asset } from "../../assets/assets";
 import "./sales.css";
+import { useOrderContext } from "../../context/OrderContext";
 
 const Sales = () => {
   const [sales, setSales] = useState(0);
@@ -10,6 +11,7 @@ const Sales = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isCustomDate, setIsCustomDate] = useState(false);
+  const { refreshTrigger } = useOrderContext();
 
   const fetchInvoices = async () => {
     try {
@@ -111,15 +113,8 @@ const Sales = () => {
   };
 
   useEffect(() => {
-    // Fetch immediately
     fetchInvoices();
-
-    // Set up interval to fetch every 5 minutes
-    const intervalId = setInterval(fetchInvoices, 5 * 60 * 1000);
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
-  }, []);
+  }, [refreshTrigger]);
 
   // Update calculations when allInvoices changes
   useEffect(() => {
