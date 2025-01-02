@@ -33,11 +33,11 @@ const TotalProduct = () => {
 
   return (
     <div>
-      <div className="card" id="purchase">
+      <div className="h-[29rem] rounded-md" id="purchase">
         <img src={asset.purchase} alt="" />
         <div className="total_sales">
           <div>
-            <h3>Total Stock</h3>
+            <h3 className="text-white">Total Stock</h3>
             <p className="text-white">{totalProducts}</p>
           </div>
 

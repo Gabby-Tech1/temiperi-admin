@@ -180,8 +180,10 @@ const Sales = () => {
             <p>
               {percentage >= 0 ? "Increase" : "Decrease"} in sales by
             </p>
-            <div className={`percent ${percentage >= 0 ? 'positive' : 'negative'}`}>
-              <h4>{Math.abs(percentage)}%</h4>
+            <div className={`${percentage >= 0 ? 'positive' : 'negative'}`}>
+              <div className="percent"> 
+                <h4 className = "percent">{Math.abs(percentage)}%</h4>
+              </div>
             </div>
           </div>
         </div>

@@ -75,7 +75,7 @@
 
 .percent {
   padding: 5px 10px;
-  border-radius: 4px;
+  border-radius: 50%;
   display: inline-block;
   margin-top: 5px;
 }

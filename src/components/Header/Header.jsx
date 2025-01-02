@@ -63,7 +63,7 @@ const Header = ({ showLogin, setShowLogin }) => {
         <Sales />
         <TotalProduct />
 
-        <div className="card" id="expense">
+        <div className="h-[29rem] rounded-md" id="expense">
           <img src={asset.expense} alt="" />
           <div className="total_sales">
             <div>

@@ -94,106 +94,125 @@ nav {
 .cards_container {
    display: grid;
    grid-template-columns: repeat(3, 1fr);
-   gap: 10px;
-   align-items: center;
-   justify-content: center;
+   gap: 20px;
    padding: 25px 0;
 }
 
 .card {
-   padding: 10px;
+   height: 29rem;
+   padding: 20px;
    border-radius: 10px;
-   transition: ease-in-out 300ms;
    position: relative;
    box-shadow: 0px 7px 7px 0 #ccc;
+   display: flex;
+   flex-direction: column;
 }
 
 .card img {
-   width: 40px;
+   width: 45px;
+   height: 45px;
+   padding: 12px;
+   background-color: white;
+   border-radius: 50%;
+   margin-bottom: 20px;
 }
 
-.card h3 {
-   font-size: 16px;
+.total_sales {
+   display: flex;
+   align-items: flex-start;
+   justify-content: space-between;
+   gap: 20px;
+   margin-top: 20px;
+}
+
+.total_sales > div {
+   flex: 1;
+}
+
+.total_sales h3 {
+   font-size: 18px;
+   margin-bottom: 10px;
+   color: white;
+}
+
+.total_sales p {
+   font-size: 28px;
+   font-weight: 600;
+   color: white;
+}
+
+.sales_percent {
+   text-align: right;
+   position: relative;
+   padding-bottom: 60px;
+}
+
+.sales_percent p {
+   font-size: 14px;
+   color: rgba(255, 255, 255, 0.9);
+   margin-bottom: 15px;
+}
+
+.percent {
+   position: relative;
+}
+
+.percent h4 {
+   width: 80px;
+   height: 80px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   background-color: white;
+   border-radius: 50%;
+   font-size: 20px;
+   font-weight: 600;
+   position: absolute;
+   right: -15px;
+   bottom: -70px;
+   border: 2px solid;
+   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+small {
+   font-size: 14px;
+   color: rgba(255, 255, 255, 0.9);
+   margin-top: auto;
+   text-align: right;
 }
 
 #sales {
    background-color: #3a2efe;
-   color: white;
 }
 
-#sales img, #purchase img, #expense img, #profit img {
-   background-color: white;
-   padding: 10px;
-   border-radius: 50%;
-}
-
-.total_sales{
-   display: flex;
-   align-items: center;
-   justify-content: space-between;
-   position: relative;
-   padding: 5px;
-   gap: 15px;
-}
-
-.total_sales > div p {
-   text-align: end;
-   padding: 3px 0;
-}
-
-.sales_percent p{
-   font-size: 12px;
-}
-
-.percent h4 {
-   width: 20%;
-   text-align: center;
-   background-color: white;
+#sales .percent h4 {
    color: #3a2efe;
-   border-radius: 50%;
-   padding: 16px 0;
-   position: absolute;
-   border: solid 1px #3a2efe;
-   right: -15px;
-   bottom: -55px;
-}
-
-small {
-   font-size: 12px;
-   color: black;
-   padding: 5px;
+   border-color: #3a2efe;
 }
 
 #purchase {
    background-color: black;
-   color: white;
 }
 
-#purchase h4 {
+#purchase .percent h4 {
    color: black;
-}
-
-#purchase small {
-   color: rgb(207, 206, 206);
+   border-color: black;
 }
 
 #expense {
-   background-color: red;
+   background-color: #dc2626;
 }
 
-#expense h4 {
-   color: red;
-}
-
-#expense small {
-color: white;
+#expense .percent h4 {
+   color: #dc2626;
+   border-color: #dc2626;
 }
 
 #profit {
-   background-color: #c61dff;
-   color: white;
+   background-color: #059669;
 }
 
-#profit h3, #profit h4 {
-   color: #02ff0b;
+#profit .percent h4 {
+   color: #059669;
+   border-color: #059669;
 }
