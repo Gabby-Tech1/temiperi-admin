@@ -105,23 +105,35 @@ const Orders = () => {
     applySearch(isCustomDate ? filteredOrders : orderList);
   };
 
-  const handleDelete = async (orderId) => {
+  const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this order?")) {
       return;
     }
 
     try {
-      await axios.delete(`https://temiperi-stocks-backend.onrender.com/temiperi/orders/${orderId}`);
-      // Refresh all components
-      triggerRefresh();
-      // Refresh local state
-      fetchOrders();
+      const response = await axios.get(
+        `https://temiperi-stocks-backend.onrender.com/temiperi/delete-order?id=${id}`
+      );
+
+      if (response.data && response.data.success) {
+        console.log("Delete response:", response.data);
+        // Refresh all components
+        triggerRefresh();
+        // Refresh local state
+        fetchOrders();
+        alert("Order deleted successfully!");
+      } else {
+        throw new Error(response.data?.message || "Failed to delete order");
+      }
     } catch (error) {
       console.error("Error deleting order:", error);
-      alert("Failed to delete order. Please try again.");
+      console.error("Error response:", error.response?.data);
+      alert(`Failed to delete order: ${error.response?.data?.message || error.message}`);
     }
   };
 
+
+  //handle delete function
   const handleEdit = (order) => {
     setEditingOrder(order);
   };
@@ -130,9 +142,19 @@ const Orders = () => {
     if (!editingOrder) return;
 
     try {
-      await axios.put(
-        `https://temiperi-stocks-backend.onrender.com/temiperi/orders/${editingOrder._id}`,
-        editingOrder
+      // Format the request data
+      const updateData = {
+        orderId: editingOrder._id,
+        items: editingOrder.items.map(item => ({
+          productId: item.productId || item._id,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      };
+
+      await axios.post(
+        `https://temiperi-stocks-backend.onrender.com/temiperi/update-order?id=${editingOrder._id}`,
+        updateData
       );
       // Refresh all components
       triggerRefresh();
@@ -143,6 +165,7 @@ const Orders = () => {
       console.error("Error updating order:", error);
       alert("Failed to update order. Please try again.");
     }
+    console.log("Updated order with ID:", editingOrder._id);
   };
 
   const handleQuantityChange = (itemIndex, newQuantity) => {
@@ -158,6 +181,21 @@ const Orders = () => {
       ...editingOrder,
       items: updatedItems
     });
+  };
+
+  const getPaymentMethodStyle = (method) => {
+    switch (method?.toLowerCase()) {
+      case 'cash':
+        return 'bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium';
+      case 'momo':
+        return 'bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium';
+      case 'card':
+        return 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium';
+      case 'bank transfer':
+        return 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium';
+      default:
+        return 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full font-medium';
+    }
   };
 
   useEffect(() => {
@@ -270,6 +308,12 @@ const Orders = () => {
                 <h3 className="font-semibold">Invoice: {order.invoiceNumber}</h3>
                 <p className="text-gray-600">Customer: {order.customerName}</p>
                 <p className="text-gray-600">Date: {new Date(order.createdAt).toLocaleString()}</p>
+                <p className="flex items-center gap-2">
+                  <span className="text-gray-600">Payment Method:</span>
+                  <span className={getPaymentMethodStyle(order.paymentMethod)}>
+                    {order.paymentMethod || 'Not specified'}
+                  </span>
+                </p>
               </div>
               <div className="flex gap-2">
                 <button
