@@ -143,7 +143,7 @@ const Sales = () => {
               Last 24 Hours
             </button>
             
-            <div className="date-inputs">
+            <div className="flex gap-5 justfiy-center items-center">
               <input
                 type="date"
                 value={startDate}
