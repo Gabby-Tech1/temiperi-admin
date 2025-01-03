@@ -10,8 +10,14 @@ const Orders = () => {
   const [endDate, setEndDate] = useState("");
   const [isCustomDate, setIsCustomDate] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchBy, setSearchBy] = useState("all"); // "all", "invoice", "name"
+  const [searchBy, setSearchBy] = useState("all");
   const [editingOrder, setEditingOrder] = useState(null);
+  const [sortByPayment, setSortByPayment] = useState(false);
+  const [paymentTotals, setPaymentTotals] = useState({
+    cash: 0,
+    momo: 0,
+    credit: 0
+  });
   const { refreshTrigger, triggerRefresh } = useOrderContext();
 
   // Fetch orders from API
@@ -21,7 +27,9 @@ const Orders = () => {
       if (response?.data) {
         const allOrders = response?.data?.data || [];
         setOrderList(allOrders);
-        
+        console.log('Fetched orders:', allOrders);
+        // Calculate totals immediately after fetching
+        calculatePaymentTotals(allOrders);
         // By default, show last 24 hours
         filterOrdersByTimeWindow(allOrders);
       } else {
@@ -30,6 +38,57 @@ const Orders = () => {
     } catch (error) {
       console.error("Error fetching orders: ", error);
     }
+  };
+
+  // Calculate payment method totals
+  const calculatePaymentTotals = (orders) => {
+    console.log('Calculating totals for orders:', orders);
+    
+    const totals = orders.reduce((acc, order) => {
+      const method = (order?.paymentMethod || 'cash').toLowerCase();
+      // Parse the amount from the order items
+      const amount = order?.items?.reduce((sum, item) => {
+        return sum + (parseFloat(item.price) * parseFloat(item.quantity));
+      }, 0) || 0;
+      
+      console.log(`Order ${order._id}:`, { method, amount });
+      
+      // Initialize the method if it doesn't exist
+      if (!acc[method]) {
+        acc[method] = 0;
+      }
+      
+      acc[method] += amount;
+      return acc;
+    }, {
+      cash: 0,
+      momo: 0,
+      credit: 0
+    });
+    
+    console.log('Final totals:', totals);
+    setPaymentTotals(totals);
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [refreshTrigger]);
+
+  useEffect(() => {
+    if (filteredOrders.length > 0) {
+      calculatePaymentTotals(filteredOrders);
+    }
+  }, [filteredOrders]);
+
+  // Sort orders by payment method
+  const sortOrdersByPaymentMethod = (orders) => {
+    if (!sortByPayment) return orders;
+    
+    return [...orders].sort((a, b) => {
+      const methodA = (a?.paymentMethod || '').toLowerCase();
+      const methodB = (b?.paymentMethod || '').toLowerCase();
+      return methodA.localeCompare(methodB);
+    });
   };
 
   // Filter orders by time window (last 24 hours by default)
@@ -44,11 +103,13 @@ const Orders = () => {
       })
       .sort((a, b) => new Date(b?.createdAt) - new Date(a?.createdAt)); // Sort by date descending
 
-    setFilteredOrders(recentOrders);
+    const sortedOrders = sortOrdersByPaymentMethod(recentOrders);
+    setFilteredOrders(sortedOrders);
     setIsCustomDate(false);
     setStartDate("");
     setEndDate("");
-    applySearch(recentOrders);
+    applySearch(sortedOrders);
+    calculatePaymentTotals(sortedOrders);
   };
 
   // Filter orders by custom date range
@@ -66,15 +127,17 @@ const Orders = () => {
       })
       .sort((a, b) => new Date(b?.createdAt) - new Date(a?.createdAt)); // Sort by date descending
 
-    setFilteredOrders(dateFilteredOrders);
+    const sortedOrders = sortOrdersByPaymentMethod(dateFilteredOrders);
+    setFilteredOrders(sortedOrders);
     setIsCustomDate(true);
-    applySearch(dateFilteredOrders);
+    applySearch(sortedOrders);
+    calculatePaymentTotals(sortedOrders);
   };
 
   // Apply search filter
   const applySearch = (orders) => {
     if (!searchQuery.trim()) {
-      setFilteredOrders(orders);
+      setFilteredOrders(sortOrdersByPaymentMethod(orders));
       return;
     }
 
@@ -95,7 +158,7 @@ const Orders = () => {
       })
       .sort((a, b) => new Date(b?.createdAt) - new Date(a?.createdAt)); // Sort by date descending
 
-    setFilteredOrders(filtered);
+    setFilteredOrders(sortOrdersByPaymentMethod(filtered));
   };
 
   // Handle search input change
@@ -131,7 +194,6 @@ const Orders = () => {
       alert(`Failed to delete order: ${error.response?.data?.message || error.message}`);
     }
   };
-
 
   //handle delete function
   const handleEdit = (order) => {
@@ -199,10 +261,6 @@ const Orders = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, [refreshTrigger]);
-
-  useEffect(() => {
     // Fetch immediately
     fetchOrders();
 
@@ -240,6 +298,16 @@ const Orders = () => {
                     return  total + orderTotal;
                   }, 0).toFixed(2)}
                 </p>
+            </div>
+            <div className="flex items-center flex-row justify-between">
+              <p className="text-lg p-1">
+                Payment Totals: 
+              </p>
+              <div className="flex flex-col">
+                <p className="font-semibold">Cash: GHC {paymentTotals.cash.toFixed(2)}</p>
+                <p className="font-semibold">Momo: GHC {paymentTotals.momo.toFixed(2)}</p>
+                <p className="font-semibold">Credit: GHC {paymentTotals.credit.toFixed(2)}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -296,6 +364,14 @@ const Orders = () => {
                 Filter
               </button>
             </div>
+          </div>
+          <div className="flex items-center justify-center gap-4 p-4 ">
+            <button
+              onClick={() => setSortByPayment(!sortByPayment)}
+              className={`filter-btn ${sortByPayment ? 'active' : ''}`}
+            >
+              Sort by Payment Method
+            </button>
           </div>
         </div>
       </div>

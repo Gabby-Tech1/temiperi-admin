@@ -4,6 +4,8 @@ import { Sidebar } from "../Sidebar/Sidebar";
 import Orders from "../Orders/Orders";
 import Header from "../Header/Header";
 import axios from "axios";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AddProduct = () => {
   // Determine base URL dynamically
@@ -40,17 +42,49 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("https://temiperi-stocks-backend.onrender.com/temiperi/products", productData);
-      alert("Product added successfully!");
-      console.log(response.data);
+      const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products");
+      const existingProduct = response.data.products.find(
+        product => product.name.toLowerCase() === productData.name.toLowerCase() &&
+                   product.category === productData.category
+      );
+
+      if (existingProduct) {
+        const updatedQuantity = parseInt(existingProduct.quantity) + parseInt(productData.quantity);
+        await axios.patch(
+          `https://temiperi-stocks-backend.onrender.com/temiperi/products/?id=${existingProduct._id}`,
+          {
+            ...existingProduct,
+            quantity: updatedQuantity,
+            price: {
+              retail_price: parseFloat(productData.price.retail_price),
+              whole_sale_price: parseFloat(productData.price.whole_sale_price)
+            }
+          }
+        );
+        toast.success("Product quantity updated successfully!");
+      } else {
+        await axios.post("https://temiperi-stocks-backend.onrender.com/temiperi/products", productData);
+        toast.success("New product added successfully!");
+      }
+
+      setProductData({
+        name: "",
+        category: "",
+        price: {
+          retail_price: "",
+          whole_sale_price: "",
+        },
+        quantity: "",
+      });
     } catch (error) {
-      console.error("Error adding product:", error);
-      alert("Failed to add product!");
+      console.error("Error managing product:", error);
+      toast.error(error.response?.data?.message || "Failed to manage product!");
     }
   };
 
   return (
     <>
+      <ToastContainer />
       {/* <Header /> */}
       <div>
         {/* <Orders url={baseUrl} /> */}

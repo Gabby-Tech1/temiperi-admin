@@ -117,7 +117,7 @@ const Products = () => {
       };
 
       const response = await api.patch(
-        `/products/?id=${editingProduct?._id}`,
+        `https://temiperi-stocks-backend.onrender.com/temiperi/products/?id=${editingProduct?._id}`,
         updateData
       );
 
@@ -160,7 +160,7 @@ const Products = () => {
     try {
       const loadingToast = toast.loading("Deleting product...");
 
-      await api.delete(`/delete-product?id=${productToDelete?._id}`);
+      await api.delete(`https://temiperi-stocks-backend.onrender.com/temiperi/delete-product?id=${productToDelete?._id}`);
 
       setProducts(products.filter((prod) => prod?._id !== productToDelete?._id));
       setShowDeleteModal(false);
