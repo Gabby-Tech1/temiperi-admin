@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./addproduct.css";
 import { Sidebar } from "../Sidebar/Sidebar";
 import Orders from "../Orders/Orders";
@@ -24,6 +24,9 @@ const AddProduct = () => {
     quantity: "",
   });
 
+  // Add state for existing product
+  const [existingProduct, setExistingProduct] = useState(null);
+
   // Handle Input Change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,27 +41,49 @@ const AddProduct = () => {
     }
   };
 
+  // Check for existing product when name or category changes
+  useEffect(() => {
+    const checkExistingProduct = async () => {
+      if (productData.name && productData.category) {
+        try {
+          const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products");
+          const found = response.data.products.find(
+            product => product.name.toLowerCase() === productData.name.toLowerCase() &&
+                      product.category === productData.category
+          );
+          
+          if (found) {
+            setExistingProduct(found);
+            setProductData(prev => ({
+              ...prev,
+              price: {
+                retail_price: found.price.retail_price,
+                whole_sale_price: found.price.whole_sale_price
+              }
+            }));
+          } else {
+            setExistingProduct(null);
+          }
+        } catch (error) {
+          console.error("Error checking for existing product:", error);
+        }
+      }
+    };
+
+    checkExistingProduct();
+  }, [productData.name, productData.category]);
+
   // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products");
-      const existingProduct = response.data.products.find(
-        product => product.name.toLowerCase() === productData.name.toLowerCase() &&
-                   product.category === productData.category
-      );
-
       if (existingProduct) {
         const updatedQuantity = parseInt(existingProduct.quantity) + parseInt(productData.quantity);
         await axios.patch(
           `https://temiperi-stocks-backend.onrender.com/temiperi/products/?id=${existingProduct._id}`,
           {
             ...existingProduct,
-            quantity: updatedQuantity,
-            price: {
-              retail_price: parseFloat(productData.price.retail_price),
-              whole_sale_price: parseFloat(productData.price.whole_sale_price)
-            }
+            quantity: updatedQuantity
           }
         );
         toast.success("Product quantity updated successfully!");
@@ -76,6 +101,7 @@ const AddProduct = () => {
         },
         quantity: "",
       });
+      setExistingProduct(null);
     } catch (error) {
       console.error("Error managing product:", error);
       toast.error(error.response?.data?.message || "Failed to manage product!");
@@ -100,6 +126,7 @@ const AddProduct = () => {
                 name="category"
                 value={productData.category}
                 onChange={handleInputChange}
+                disabled={existingProduct}
               >
                 <option value="">Select Category</option>
                 <option value="ABL">ABL</option>
@@ -116,6 +143,7 @@ const AddProduct = () => {
                 placeholder="Alvaro"
                 value={productData.name}
                 onChange={handleInputChange}
+                disabled={existingProduct}
               />
             </label>
             <label>
@@ -126,6 +154,7 @@ const AddProduct = () => {
                 placeholder="Retail Price"
                 value={productData.price.retail_price}
                 onChange={handleInputChange}
+                disabled={existingProduct}
               />
             </label>
             <label>
@@ -136,6 +165,7 @@ const AddProduct = () => {
                 placeholder="Wholesale Price"
                 value={productData.price.whole_sale_price}
                 onChange={handleInputChange}
+                disabled={existingProduct}
               />
             </label>
             <label>
@@ -149,7 +179,9 @@ const AddProduct = () => {
               />
             </label>
             <div className="btn">
-              <button type="submit">Add Product</button>
+              <button type="submit">
+                {existingProduct ? 'Update Quantity' : 'Add Product'}
+              </button>
             </div>
           </form>
         </div>
