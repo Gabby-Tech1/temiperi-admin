@@ -12,6 +12,7 @@ import Footer from "./components/Footer/Footer";
 import { useLocation } from "react-router-dom";
 import { OrderProvider } from "./context/OrderContext";
 import Expenses from "./components/Expenses/Expenses";
+import Summary from "./components/Summary/Summary";
 
 const App = ({ data }) => {
   // const devUrl = "http://localhost:4000/temiperi";
@@ -45,6 +46,7 @@ const App = ({ data }) => {
           <Route path="/orders" element={<Orders />} />
           <Route path="/login" element={<Login />} />
           <Route path="/expenses" element={<Expenses />} />
+          <Route path="/summary" element={<Summary />} />
         </Routes>
         {/* <Footer /> */}
       </div>

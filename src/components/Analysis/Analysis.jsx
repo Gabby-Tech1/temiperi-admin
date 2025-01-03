@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./analysis.css";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { NavLink } from "react-router-dom";
-import { Bar } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 import { Chart as ChartJS } from "chart.js/auto";
 import axios from "axios";
 import Header from "../Header/Header";
@@ -12,7 +12,17 @@ const Analysis = () => {
   const [salesData, setSalesData] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState('monthly'); // 'monthly', 'weekly', 'daily'
   const [topProducts, setTopProducts] = useState([]);
+  const [timeFrameData, setTimeFrameData] = useState({
+    labels: [],
+    values: [],
+    average: 0,
+    highest: 0,
+    lowest: 0,
+    total: 0
+  });
 
   // Fetch orders data
   const fetchOrders = async () => {
@@ -23,12 +33,92 @@ const Analysis = () => {
         const orders = response.data.data;
         processOrdersData(orders);
         calculateTopProducts(orders);
+        updateTimeFrameAnalysis(orders);
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [selectedYear, selectedMonth, selectedTimeFrame]);
+
+  // Process time-based analysis
+  const updateTimeFrameAnalysis = (orders) => {
+    const filteredOrders = orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      const orderYear = orderDate.getFullYear();
+      const orderMonth = orderDate.getMonth();
+      
+      if (selectedTimeFrame === 'monthly') {
+        return orderYear === selectedYear;
+      } else {
+        return orderYear === selectedYear && orderMonth === selectedMonth;
+      }
+    });
+
+    let timeFrameMap = new Map();
+    let labels = [];
+    let values = [];
+
+    filteredOrders.forEach(order => {
+      const orderDate = new Date(order.createdAt);
+      let key = '';
+      
+      switch (selectedTimeFrame) {
+        case 'monthly':
+          key = orderDate.getMonth(); // 0-11
+          break;
+        case 'weekly':
+          // Get week number within the month
+          const weekNum = Math.ceil((orderDate.getDate() + 
+            new Date(orderDate.getFullYear(), orderDate.getMonth(), 1).getDay()) / 7);
+          key = `Week ${weekNum}`;
+          break;
+        case 'daily':
+          key = orderDate.getDate(); // 1-31
+          break;
+      }
+
+      const orderTotal = order.items.reduce((sum, item) => {
+        return sum + (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+      }, 0);
+
+      timeFrameMap.set(key, (timeFrameMap.get(key) || 0) + orderTotal);
+    });
+
+    if (selectedTimeFrame === 'monthly') {
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      labels = monthNames;
+      values = monthNames.map((_, index) => timeFrameMap.get(index) || 0);
+    } else if (selectedTimeFrame === 'weekly') {
+      // Generate 4-5 weeks for the selected month
+      const weeksInMonth = 5;
+      labels = Array.from({length: weeksInMonth}, (_, i) => `Week ${i + 1}`);
+      values = labels.map(week => timeFrameMap.get(week) || 0);
+    } else {
+      // Daily - get all days in the selected month
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+      values = labels.map(day => timeFrameMap.get(day) || 0);
+    }
+
+    const nonZeroValues = values.filter(v => v > 0);
+    const average = nonZeroValues.length ? 
+      nonZeroValues.reduce((a, b) => a + b, 0) / nonZeroValues.length : 0;
+
+    setTimeFrameData({
+      labels,
+      values,
+      average,
+      highest: Math.max(...values),
+      lowest: Math.min(...nonZeroValues),
+      total: values.reduce((a, b) => a + b, 0)
+    });
   };
 
   // Calculate top products by total amount
@@ -113,9 +203,58 @@ const Analysis = () => {
     setSalesData(monthlySales);
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, [selectedYear]);
+  const TimeFrameChart = () => {
+    const data = {
+      labels: timeFrameData.labels,
+      datasets: [{
+        label: `Sales (GH₵) - ${selectedTimeFrame.charAt(0).toUpperCase() + selectedTimeFrame.slice(1)}`,
+        data: timeFrameData.values,
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+        tension: 0.4
+      }]
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `GH₵ ${context.raw.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Sales in Cedis (GH₵)'
+          },
+          ticks: {
+            callback: (value) => `GH₵ ${value.toLocaleString()}`
+          }
+        }
+      }
+    };
+
+    return (
+      <div style={{ width: '100%', height: '400px' }}>
+        {selectedTimeFrame === 'monthly' ? 
+          <Bar data={data} options={options} /> :
+          <Line data={data} options={options} />
+        }
+      </div>
+    );
+  };
 
   const MyBarChart = () => {
     const data = {
@@ -179,18 +318,30 @@ const Analysis = () => {
 
   return (
     <div className="mt-10">
-      <h2>Performance Analysis</h2>
+      <h2>Sales Analysis</h2>
 
       <div className="container">
         <Sidebar />
 
         <div className="div">
-          <div className="filer">
-            <div className="product_filter_container">
+          <div className="analysis-controls">
+            <div className="time-frame-selector">
               <label>
-                Year
+                View By:
                 <select 
-                  value={selectedYear} 
+                  value={selectedTimeFrame}
+                  onChange={(e) => setSelectedTimeFrame(e.target.value)}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="daily">Daily</option>
+                </select>
+              </label>
+
+              <label>
+                Year:
+                <select 
+                  value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                 >
                   {[2023, 2024, 2025].map(year => (
@@ -198,6 +349,22 @@ const Analysis = () => {
                   ))}
                 </select>
               </label>
+
+              {selectedTimeFrame !== 'monthly' && (
+                <label>
+                  Month:
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  >
+                    {['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'
+                    ].map((month, index) => (
+                      <option key={index} value={index}>{month}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
           </div>
 
@@ -206,9 +373,41 @@ const Analysis = () => {
               <div>Loading sales data...</div>
             ) : (
               <>
-                <div className="myChart">
-                  <MyBarChart />
+                <div className="sales-summary">
+                  <div className="summary-card">
+                    <h4>Total Sales</h4>
+                    <p>GH₵ {timeFrameData.total.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>Average Sales</h4>
+                    <p>GH₵ {timeFrameData.average.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>Highest Sales</h4>
+                    <p>GH₵ {timeFrameData.highest.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h4>Lowest Sales</h4>
+                    <p>GH₵ {timeFrameData.lowest.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })}</p>
+                  </div>
                 </div>
+
+                <div className="myChart">
+                  <TimeFrameChart />
+                </div>
+
                 <div className="best_performing_product">
                   <h4>Top Selling Products</h4>
                   <div className="best_products">
@@ -220,12 +419,6 @@ const Analysis = () => {
                           </p>
                           <small className="total-amount">
                             Total Revenue: GH₵ {product.totalAmount.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2
-                            })}
-                          </small>
-                          <small className="unit-price">
-                            Unit Price: GH₵ {product.unitPrice.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2
                             })}
