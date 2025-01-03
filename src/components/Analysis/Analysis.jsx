@@ -1,48 +1,139 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./analysis.css";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { NavLink } from "react-router-dom";
-import { Bar, Doughnut, Pie } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS } from "chart.js/auto";
-import Orders from "../Orders/Orders";
+import axios from "axios";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 
 const Analysis = () => {
-  //url endpoints for the order component
-  // Determine base URL dynamically
-  const devUrl = "http://localhost:4000/temiperi";
-  const prodUrl = "https://temiperi-backend.onrender.com/temiperi";
-  const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
+  const [salesData, setSalesData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [topProducts, setTopProducts] = useState([]);
+
+  // Fetch orders data
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/orders");
+      if (response?.data?.data) {
+        const orders = response.data.data;
+        processOrdersData(orders);
+        calculateTopProducts(orders);
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate top products by total amount
+  const calculateTopProducts = (orders) => {
+    // Create a map to store product totals
+    const productTotals = new Map();
+
+    // Process all orders and their items
+    orders.forEach(order => {
+      if (!order.items || !Array.isArray(order.items)) {
+        console.log('Invalid order:', order);
+        return;
+      }
+
+      order.items.forEach(item => {
+        // Debug log to see item structure
+        console.log('Processing item:', item);
+
+        // Try to get product name from all possible locations
+        const productName = item.product?.name || item.productName || item.name;
+        
+        if (!productName) {
+          console.log('No product name found in item:', item);
+          return;
+        }
+
+        const price = parseFloat(item.price) || parseFloat(item.product?.price) || 0;
+        const quantity = parseFloat(item.quantity) || 0;
+        const itemTotal = price * quantity;
+
+        // If product exists in map, update its totals
+        if (productTotals.has(productName)) {
+          const product = productTotals.get(productName);
+          product.totalAmount += itemTotal;
+          product.totalQuantity += quantity;
+          product.orders += 1;
+        } else {
+          // Add new product to map
+          productTotals.set(productName, {
+            name: productName,
+            totalAmount: itemTotal,
+            totalQuantity: quantity,
+            unitPrice: price,
+            orders: 1
+          });
+        }
+      });
+    });
+
+    // Debug log for product totals
+    console.log('Product totals:', Array.from(productTotals.entries()));
+
+    // Convert map to array and sort by total amount
+    const sortedProducts = Array.from(productTotals.values())
+      .filter(product => product.totalAmount > 0)
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .slice(0, 4);
+
+    console.log('Top products:', sortedProducts);
+    setTopProducts(sortedProducts);
+  };
+
+  // Process orders data for monthly sales chart
+  const processOrdersData = (orders) => {
+    const monthlySales = Array(12).fill(0);
+
+    orders.forEach(order => {
+      const orderDate = new Date(order.createdAt);
+      const orderYear = orderDate.getFullYear();
+      
+      if (orderYear === selectedYear) {
+        const month = orderDate.getMonth();
+        const orderTotal = order.items.reduce((total, item) => {
+          const price = parseFloat(item.price) || 0;
+          const quantity = parseFloat(item.quantity) || 0;
+          return total + (price * quantity);
+        }, 0);
+        monthlySales[month] += orderTotal;
+      }
+    });
+
+    setSalesData(monthlySales);
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [selectedYear]);
 
   const MyBarChart = () => {
-    // Define the data for the chart
     const data = {
       labels: [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
       ],
       datasets: [
         {
-          label: "Sales (gh)",
-          data: [3000, 2000, 5000, 4000, 6000, 7000, 100, 500, 3030],
-          backgroundColor: "rgba(75, 192, 192, 0.6)", // Bar color
+          label: `Sales (GH₵) - ${selectedYear}`,
+          data: salesData,
+          backgroundColor: "rgba(75, 192, 192, 0.6)",
           borderColor: "rgba(75, 192, 192, 1)",
           borderWidth: 1,
         },
       ],
     };
-    // Define optional settings for the chart
+
     const options = {
       responsive: true,
       maintainAspectRatio: false,
@@ -52,6 +143,11 @@ const Analysis = () => {
         },
         tooltip: {
           enabled: true,
+          callbacks: {
+            label: (context) => {
+              return `GH₵ ${context.raw.toLocaleString()}`;
+            }
+          }
         },
       },
       scales: {
@@ -59,8 +155,11 @@ const Analysis = () => {
           beginAtZero: true,
           title: {
             display: true,
-            text: "Sales in Cedis",
+            text: "Sales in Cedis (GH₵)",
           },
+          ticks: {
+            callback: (value) => `GH₵ ${value.toLocaleString()}`
+          }
         },
         x: {
           title: {
@@ -80,98 +179,70 @@ const Analysis = () => {
 
   return (
     <div className="mt-10">
-      {/* <Header /> */}
-      {/* <Orders url={baseUrl} /> */}
       <h2>Performance Analysis</h2>
 
       <div className="container">
-        {/* ====================== sidebar Component ============================ */}
         <Sidebar />
 
-        <div className="div ">
+        <div className="div">
           <div className="filer">
-            {/* ================= filter container for products ================ */}
-
             <div className="product_filter_container">
-              <label htmlFor="">
-                Category
-                <select>
-                  <option value="">ABL</option>
-                  <option value="">Water</option>
-                  <option value="">Pet Drinks</option>
-                  <option value="">Guniness</option>
+              <label>
+                Year
+                <select 
+                  value={selectedYear} 
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                >
+                  {[2023, 2024, 2025].map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
                 </select>
-              </label>
-
-              <label htmlFor="">product</label>
-
-              <label htmlFor="">
-                Month
-                <select name="month" id="">
-                  <option value="January">January</option>
-                  <option value="February">February</option>
-                  <option value="March">March</option>
-                  <option value="April">April</option>
-                  <option value="May">May</option>
-                  <option value="June">June</option>
-                  <option value="July">July</option>
-                  <option value="August">August</option>
-                  <option value="September">September</option>
-                  <option value="October">October</option>
-                  <option value="November">November</option>
-                  <option value="December">December</option>
-                </select>
-              </label>
-
-              <label htmlFor="">
-                Week
-                <select name="" id="">
-                  <option value="">Week 1</option>
-                  <option value="">Week 2</option>
-                  <option value="">Week 3</option>
-                  <option value="">Week 4</option>
-                </select>
-              </label>
-
-              <label htmlFor="">
-                Date
-                <input type="date" />
               </label>
             </div>
           </div>
 
-          {/* ========================= chart js integration ===================== */}
           <div className="chart_container">
-            <div className="myChart">
-              <MyBarChart />
-            </div>
-            <div className="best_performing_product">
-              <h4>Best Performing Products</h4>
-              <div className="best_products">
-                <div className="products_details">
-                  <p>Product 1</p>
-                  <small></small>
+            {loading ? (
+              <div>Loading sales data...</div>
+            ) : (
+              <>
+                <div className="myChart">
+                  <MyBarChart />
                 </div>
-
-                <div className="products_details">
-                  <p>Product 2</p>
-                  <small></small>
+                <div className="best_performing_product">
+                  <h4>Top Selling Products</h4>
+                  <div className="best_products">
+                    {topProducts && topProducts.length > 0 ? (
+                      topProducts.map((product, index) => (
+                        <div key={index} className="products_details">
+                          <p className="product-name" style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+                            {index + 1}. {product.name || 'Unknown Product'}
+                          </p>
+                          <small className="total-amount">
+                            Total Revenue: GH₵ {product.totalAmount.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </small>
+                          <small className="unit-price">
+                            Unit Price: GH₵ {product.unitPrice.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            })}
+                          </small>
+                          <small className="quantity">Total Quantity Sold: {product.totalQuantity}</small>
+                          <small className="orders">Number of Orders: {product.orders}</small>
+                        </div>
+                      ))
+                    ) : (
+                      <div>No products found</div>
+                    )}
+                  </div>
                 </div>
-
-                <div className="products_details">
-                  <p>Product 2</p>
-                  <small></small>
-                </div>
-
-                <div className="products_details">
-                  <p>Product 2</p>
-                  <small></small>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
-          {/* ========================= Report btn ===================== */}
           <div className="btn report">
             <NavLink to={"/report"}>
               <button>Write Report</button>
@@ -179,33 +250,6 @@ const Analysis = () => {
           </div>
         </div>
       </div>
-
-      {/* ==================== brife Report Summary ============= */}
-      {/* <div className="performance_summary">
-        <h3>Performance Summary</h3>
-        <p>
-          <small>1. </small>Lorem ipsum dolor sit amet consectetur adipisicing
-          elit. Repudiandae distinctio harum mollitia suscipit ullam sint? Illo
-          repellendus repellat magnam, eaque iste odit provident sunt similique
-          inventore, quibusdam consequatur, enim ipsa?
-        </p>
-
-        <p>
-          <small>2. </small>Lorem ipsum dolor sit amet consectetur adipisicing
-          elit. Repudiandae distinctio harum mollitia suscipit ullam sint? Illo
-          repellendus repellat magnam, eaque iste odit provident sunt similique
-          inventore, quibusdam consequatur, enim ipsa?
-        </p>
-
-        <p>
-          <small>3. </small>Lorem ipsum dolor sit amet consectetur adipisicing
-          elit. Repudiandae distinctio harum mollitia suscipit ullam sint? Illo
-          repellendus repellat magnam, eaque iste odit provident sunt similique
-          inventore, quibusdam consequatur, enim ipsa?
-        </p>
-      </div> */}
-
-      <Footer />
     </div>
   );
 };

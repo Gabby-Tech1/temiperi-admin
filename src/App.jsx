@@ -11,6 +11,7 @@ import Report from "./components/Reprot/Report";
 import Footer from "./components/Footer/Footer";
 import { useLocation } from "react-router-dom";
 import { OrderProvider } from "./context/OrderContext";
+import Expenses from "./components/Expenses/Expenses";
 
 const App = ({ data }) => {
   // const devUrl = "http://localhost:4000/temiperi";
@@ -43,6 +44,7 @@ const App = ({ data }) => {
           <Route path="/report" element={<Report />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/expenses" element={<Expenses />} />
         </Routes>
         {/* <Footer /> */}
       </div>
