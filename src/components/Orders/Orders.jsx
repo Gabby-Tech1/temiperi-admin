@@ -13,6 +13,8 @@ const Orders = () => {
   const [searchBy, setSearchBy] = useState("all");
   const [editingOrder, setEditingOrder] = useState(null);
   const [sortByPayment, setSortByPayment] = useState(false);
+  const [momoAmount, setMomoAmount] = useState(0);
+  const [cashAmount, setCashAmount] = useState(0);
   const [paymentTotals, setPaymentTotals] = useState({
     cash: 0,
     momo: 0,
@@ -46,37 +48,29 @@ const Orders = () => {
   const calculatePaymentTotals = (orders) => {
     console.log('Calculating totals for orders:', orders);
     
-    const totals = orders.reduce((acc, order) => {
-      const method = (order?.paymentMethod || 'cash').toLowerCase();
-      
-      // Parse the amount from the order items
+    let totalMomo = 0;
+    let totalCash = 0;
+    
+    orders.forEach(order => {
       const totalAmount = order?.items?.reduce((sum, item) => {
         return sum + (parseFloat(item.price) * parseFloat(item.quantity));
       }, 0) || 0;
 
-      // Handle partial payments and momo/cash payments
-      if (order.paymentMethod === 'momo/cash' || order.paymentType === 'partial') {
-        acc.partialCash += parseFloat(order?.cashAmount || 0);
-        acc.partialMomo += parseFloat(order?.momoAmount || 0);
-      } else {
-        // For full payments, add to the respective payment method
-        if (!acc[method]) {
-          acc[method] = 0;
-        }
-        acc[method] += totalAmount;
+      if (order.paymentMethod === 'momo') {
+        totalMomo += totalAmount;
+      } else if (order.paymentMethod === 'cash') {
+        totalCash += totalAmount;
+      } else if (order.paymentMethod === 'momo/cash') {
+        totalMomo += parseFloat(order.momoAmount || 0);
+        totalCash += parseFloat(order.cashAmount || 0);
       }
-      
-      return acc;
-    }, {
-      cash: 0,
-      momo: 0,
-      credit: 0,
-      partialCash: 0,
-      partialMomo: 0
     });
     
-    console.log('Final totals:', totals);
-    setPaymentTotals(totals);
+    setMomoAmount(totalMomo);
+    setCashAmount(totalCash);
+    
+    console.log('Momo Total:', totalMomo);
+    console.log('Cash Total:', totalCash);
   };
 
   useEffect(() => {
@@ -313,8 +307,8 @@ const Orders = () => {
                 Payment Totals: 
               </p>
               <div className="flex flex-col">
-                <p className="font-semibold">Cash: GHC {paymentTotals.cash.toFixed(2)}</p>
-                <p className="font-semibold">Momo: GHC {paymentTotals.momo.toFixed(2)}</p>
+                <p className="font-semibold">Cash: GHC {cashAmount.toFixed(2)}</p>
+                <p className="font-semibold">Momo: GHC {momoAmount.toFixed(2)}</p>
                 <p className="font-semibold">Credit: GHC {paymentTotals.credit.toFixed(2)}</p>
                 <p className="font-semibold">Partial Cash: GHC {paymentTotals.partialCash.toFixed(2)}</p>
                 <p className="font-semibold">Partial Momo: GHC {paymentTotals.partialMomo.toFixed(2)}</p>
