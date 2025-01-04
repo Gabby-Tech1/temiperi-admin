@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../../api/axios";
-import { Sidebar } from "../Sidebar/Sidebar";
-import axios from 'axios';
+import axios from "axios";
 import "./product.css";
 import { icons } from "../../icons/heroIcons";
 import { toast } from "react-toastify";
@@ -24,19 +23,25 @@ const Products = () => {
     category: "",
     retail_price: "",
     whole_sale_price: "",
-    quantity: ""
+    quantity: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(10);
 
   // Fetch products
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('https://temiperi-stocks-backend.onrender.com/temiperi/products');
+      const response = await axios.get(
+        "https://temiperi-stocks-backend.onrender.com/temiperi/products"
+      );
       const productsData = response?.data?.products || [];
       setProducts(productsData);
       setFilteredProducts(productsData);
 
       // Extract unique categories
-      const uniqueCategories = [...new Set(productsData?.map(product => product?.category))];
+      const uniqueCategories = [
+        ...new Set(productsData?.map((product) => product?.category)),
+      ];
       setCategories(uniqueCategories);
 
       setLoading(false);
@@ -75,6 +80,17 @@ const Products = () => {
     setFilteredProducts(result);
   }, [searchTerm, selectedCategory, products]);
 
+  // Get current products
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct
+  );
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   // Handle edit click
   const handleEditClick = (product) => {
     setEditingProduct(product);
@@ -91,10 +107,7 @@ const Products = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setEditForm((prev) => ({ ...prev, [name]: value }));
     console.log(editingProduct);
     console.log(editForm);
   };
@@ -111,9 +124,9 @@ const Products = () => {
         category: editForm.category,
         price: {
           retail_price: parseFloat(editForm?.retail_price),
-          whole_sale_price: parseFloat(editForm?.whole_sale_price)
+          whole_sale_price: parseFloat(editForm?.whole_sale_price),
         },
-        quantity: parseInt(editForm.quantity)
+        quantity: parseInt(editForm.quantity),
       };
 
       const response = await api.patch(
@@ -134,7 +147,7 @@ const Products = () => {
           category: "",
           retail_price: "",
           whole_sale_price: "",
-          quantity: ""
+          quantity: "",
         });
 
         toast.dismiss(loadingToast);
@@ -144,7 +157,8 @@ const Products = () => {
     } catch (err) {
       console.error("Error updating product:", err);
       toast.error(
-        err.response?.data?.message || "Failed to update product. Please try again."
+        err.response?.data?.message ||
+          "Failed to update product. Please try again."
       );
     }
   };
@@ -160,9 +174,13 @@ const Products = () => {
     try {
       const loadingToast = toast.loading("Deleting product...");
 
-      await api.delete(`https://temiperi-stocks-backend.onrender.com/temiperi/delete-product?id=${productToDelete?._id}`);
+      await api.delete(
+        `https://temiperi-stocks-backend.onrender.com/temiperi/delete-product?id=${productToDelete?._id}`
+      );
 
-      setProducts(products.filter((prod) => prod?._id !== productToDelete?._id));
+      setProducts(
+        products.filter((prod) => prod?._id !== productToDelete?._id)
+      );
       setShowDeleteModal(false);
       setProductToDelete(null);
 
@@ -171,7 +189,8 @@ const Products = () => {
     } catch (err) {
       console.error("Error deleting product:", err);
       toast.error(
-        err.response?.data?.message || "Failed to delete product. Please try again."
+        err.response?.data?.message ||
+          "Failed to delete product. Please try again."
       );
     }
   };
@@ -179,8 +198,6 @@ const Products = () => {
   return (
     <div>
       <div className="body_container">
-        <Sidebar />
-
         <div className="product_container">
           <div className="header-section">
             <h2 className="text-2xl font-bold">Products</h2>
@@ -216,56 +233,94 @@ const Products = () => {
             <p>{error}</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table table-zebra w-full">
-                <thead>
+              <table className="w-full table-auto">
+                <thead className="bg-gray-100">
                   <tr>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Retail Price</th>
-                    <th>Wholesale Price</th>
-                    <th>Quantity</th>
-                    <th>Created At</th>
-                    <th>Actions</th>
+                    <th className="px-4 py-2 text-left">Name</th>
+                    <th className="px-4 py-2 text-left">Category</th>
+                    <th className="px-4 py-2 text-left">Retail Price</th>
+                    <th className="px-4 py-2 text-left">Wholesale Price</th>
+                    <th className="px-4 py-2 text-left">Quantity</th>
+                    <th className="px-4 py-2 text-left">Created At</th>
+                    <th className="px-4 py-2 text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((product) => (
-                    <tr key={product._id}>
-                      <td>{product?.name}</td>
-                      <td>{product?.category}</td>
-                      <td>GH₵{product?.price?.retail_price}</td>
-                      <td>GH₵{product?.price?.whole_sale_price}</td>
-                      <td>{product?.quantity}</td>
-                      <td>
-                        {new Date(product?.createdAt).toLocaleDateString()}
-                      </td>
-                      <td>
-                        <div className="action-buttons">
-                          <span
-                            className="cursor-pointer edit-icon"
-                            onClick={() => handleEditClick(product)}
-                          >
-                            {icons.edit}
-                          </span>
-                          <span
-                            className="cursor-pointer text-red-600 delete-icon"
-                            onClick={() => handleDeleteClick(product)}
-                          >
-                            {icons.trash}
-                          </span>
-                        </div>
+                  {currentProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-2 text-center">
+                        No products found
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    currentProducts.map((product) => (
+                      <tr key={product._id} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-2">{product?.name}</td>
+                        <td className="px-4 py-2">{product?.category}</td>
+                        <td className="px-4 py-2">GH₵{product?.price?.retail_price}</td>
+                        <td className="px-4 py-2">GH₵{product?.price?.whole_sale_price}</td>
+                        <td className="px-4 py-2">{product?.quantity}</td>
+                        <td className="px-4 py-2">
+                          {new Date(product?.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditClick(product)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              {icons.edit}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(product)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              {icons.trash}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
-              {filteredProducts.length === 0 && (
-                <p className="no-results">
-                  No products found matching your criteria.
-                </p>
-              )}
             </div>
           )}
+
+          {/* Pagination */}
+          <div className="pagination-container mt-4 flex justify-center items-center gap-2">
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            {Array.from({
+              length: Math.ceil(filteredProducts.length / productsPerPage),
+            }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => paginate(index + 1)}
+                className={`px-3 py-1 rounded ${
+                  currentPage === index + 1
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === Math.ceil(filteredProducts.length / productsPerPage)}
+              className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
 
           {/* Edit Modal */}
           {showEditModal && (

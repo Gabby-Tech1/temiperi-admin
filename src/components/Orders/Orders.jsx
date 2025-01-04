@@ -15,6 +15,8 @@ const Orders = () => {
   const [sortByPayment, setSortByPayment] = useState(false);
   const [momoAmount, setMomoAmount] = useState(0);
   const [cashAmount, setCashAmount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [ordersPerPage] = useState(10);
   const [paymentTotals, setPaymentTotals] = useState({
     cash: 0,
     momo: 0,
@@ -274,6 +276,14 @@ const Orders = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  // Get current orders
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <div className="table_container">
       <div className="header-section border border-solid rounded-md border-gray-300 p-6">
@@ -395,7 +405,7 @@ const Orders = () => {
             </tr>
           </thead>
           <tbody>
-            {sortOrdersByPaymentMethod(filteredOrders).map((order) => (
+            {currentOrders.map((order) => (
               <tr key={order._id} className="border-b">
                 <td className="px-4 py-2">{order.customerName}</td>
                 <td className="px-4 py-2">
@@ -455,6 +465,39 @@ const Orders = () => {
             ))}
           </tbody>
         </table>
+        
+        {/* Pagination */}
+        <div className="pagination-container mt-4 flex justify-center items-center gap-2">
+          <button
+            onClick={() => paginate(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          >
+            Previous
+          </button>
+          
+          {Array.from({ length: Math.ceil(filteredOrders.length / ordersPerPage) }).map((_, index) => (
+            <button
+              key={index}
+              onClick={() => paginate(index + 1)}
+              className={`px-3 py-1 rounded ${
+                currentPage === index + 1
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {index + 1}
+            </button>
+          ))}
+          
+          <button
+            onClick={() => paginate(currentPage + 1)}
+            disabled={currentPage === Math.ceil(filteredOrders.length / ordersPerPage)}
+            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );
