@@ -30,6 +30,16 @@ export const Sidebar = () => {
         <img src={asset.setting_icon} alt="" />
         <NavLink to={"/settings"}>Settings</NavLink>
       </div>
+
+      <div className="content">
+        <img src={asset.analytics_icon} alt="" />
+        <NavLink to={"/report"}>Write Report</NavLink>
+      </div>
+
+      <div className="content">
+        <img src={asset.analytics_icon} alt="" />
+        <NavLink to={"/get-report"}>View Reports</NavLink>
+      </div>
     </div>
   );
 };

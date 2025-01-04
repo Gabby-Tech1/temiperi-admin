@@ -13,18 +13,16 @@ import { useLocation } from "react-router-dom";
 import { OrderProvider } from "./context/OrderContext";
 import Expenses from "./components/Expenses/Expenses";
 import Summary from "./components/Summary/Summary";
+import ViewReports from "./components/Reprot/ViewReports";
+import { Sidebar } from "./components/Sidebar/Sidebar";
+import "./app.css";
 
 const App = ({ data }) => {
-  // const devUrl = "http://localhost:4000/temiperi";
-  // const prodUrl = "https://temiperi-backend.onrender.com/temiperi";
-  // const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
-
   const [showLogin, setShowLogin] = useState(true);
-
   const navigate = useNavigate();
   const location = useLocation();
-
   const forbiddenRoutes = ["/login"];
+  const isLoginPage = location.pathname.includes(forbiddenRoutes);
 
   useEffect(() => {
     if (!data) {
@@ -33,22 +31,36 @@ const App = ({ data }) => {
       navigate("/analysis");
     }
   }, []);
+
   return (
     <OrderProvider>
-      <div>
-        {!location.pathname.includes(forbiddenRoutes) && <Header />}
-        <Routes>
-          <Route path="/" element={<Analysis />} />
-          <Route path="/product" element={<Products />} />
-          <Route path="/addproduct" element={<AddProduct />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/report" element={<Report />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/summary" element={<Summary />} />
-        </Routes>
-        {/* <Footer /> */}
+      <div className="app">
+        {!isLoginPage && (
+          <>
+            <Header />
+            <div className="main-container">
+              <Sidebar />
+              <div className="content-container">
+                <Routes>
+                  <Route path="/" element={<Analysis />} />
+                  <Route path="/product" element={<Products />} />
+                  <Route path="/addproduct" element={<AddProduct />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/report" element={<Report />} />
+                  <Route path="/get-report" element={<ViewReports />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/expenses" element={<Expenses />} />
+                  <Route path="/summary" element={<Summary />} />
+                </Routes>
+              </div>
+            </div>
+          </>
+        )}
+        {isLoginPage && (
+          <Routes>
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        )}
       </div>
     </OrderProvider>
   );
