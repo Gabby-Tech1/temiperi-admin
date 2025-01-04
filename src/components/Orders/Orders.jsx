@@ -16,7 +16,9 @@ const Orders = () => {
   const [paymentTotals, setPaymentTotals] = useState({
     cash: 0,
     momo: 0,
-    credit: 0
+    credit: 0,
+    partialCash: 0,
+    partialMomo: 0
   });
   const { refreshTrigger, triggerRefresh } = useOrderContext();
 
@@ -46,24 +48,31 @@ const Orders = () => {
     
     const totals = orders.reduce((acc, order) => {
       const method = (order?.paymentMethod || 'cash').toLowerCase();
+      
       // Parse the amount from the order items
-      const amount = order?.items?.reduce((sum, item) => {
+      const totalAmount = order?.items?.reduce((sum, item) => {
         return sum + (parseFloat(item.price) * parseFloat(item.quantity));
       }, 0) || 0;
-      
-      console.log(`Order ${order._id}:`, { method, amount });
-      
-      // Initialize the method if it doesn't exist
-      if (!acc[method]) {
-        acc[method] = 0;
+
+      // Handle partial payments and momo/cash payments
+      if (order.paymentMethod === 'momo/cash' || order.paymentType === 'partial') {
+        acc.partialCash += parseFloat(order?.cashAmount || 0);
+        acc.partialMomo += parseFloat(order?.momoAmount || 0);
+      } else {
+        // For full payments, add to the respective payment method
+        if (!acc[method]) {
+          acc[method] = 0;
+        }
+        acc[method] += totalAmount;
       }
       
-      acc[method] += amount;
       return acc;
     }, {
       cash: 0,
       momo: 0,
-      credit: 0
+      credit: 0,
+      partialCash: 0,
+      partialMomo: 0
     });
     
     console.log('Final totals:', totals);
@@ -307,6 +316,8 @@ const Orders = () => {
                 <p className="font-semibold">Cash: GHC {paymentTotals.cash.toFixed(2)}</p>
                 <p className="font-semibold">Momo: GHC {paymentTotals.momo.toFixed(2)}</p>
                 <p className="font-semibold">Credit: GHC {paymentTotals.credit.toFixed(2)}</p>
+                <p className="font-semibold">Partial Cash: GHC {paymentTotals.partialCash.toFixed(2)}</p>
+                <p className="font-semibold">Partial Momo: GHC {paymentTotals.partialMomo.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -377,99 +388,79 @@ const Orders = () => {
       </div>
 
       <div className="orders-list mt-6">
-        {filteredOrders.map((order) => (
-          <div key={order._id} className="order-item border border-gray-200 rounded-lg p-4 mb-4 shadow-sm">
-            <div className="order-header flex justify-between items-center mb-3">
-              <div>
-                <h3 className="font-semibold">Invoice: {order.invoiceNumber}</h3>
-                <p className="text-gray-600">Customer: {order.customerName}</p>
-                <p className="text-gray-600">Date: {new Date(order.createdAt).toLocaleString()}</p>
-                <p className="flex items-center gap-2">
-                  <span className="text-gray-600">Payment Method:</span>
-                  <span className={getPaymentMethodStyle(order.paymentMethod)}>
-                    {order.paymentMethod || 'Not specified'}
-                  </span>
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(order)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(order._id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-
-            {editingOrder && editingOrder._id === order._id ? (
-              <div className="edit-form bg-gray-50 p-4 rounded">
-                <h4 className="font-semibold mb-2">Edit Order Items</h4>
-                {editingOrder.items.map((item, index) => (
-                  <div key={index} className="flex items-center gap-4 mb-2">
-                    <p className="flex-1">{item.description || item.name}</p>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => handleQuantityChange(index, e.target.value)}
-                      className="w-20 p-1 border rounded"
-                      min="0"
-                    />
-                    <p className="w-24">GHC {item.price}</p>
-                    <p className="w-24">GHC {(item.quantity * item.price).toFixed(2)}</p>
+        <table className="w-full">
+          <thead>
+            <tr className="text-left">
+              <th className="px-4 py-2">Customer</th>
+              <th className="px-4 py-2">Items</th>
+              <th className="px-4 py-2">Payment Method</th>
+              <th className="px-4 py-2">Total</th>
+              <th className="px-4 py-2">Date</th>
+              <th className="px-4 py-2">Invoice</th>
+              <th className="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortOrdersByPaymentMethod(filteredOrders).map((order) => (
+              <tr key={order._id} className="border-b">
+                <td className="px-4 py-2">{order.customerName}</td>
+                <td className="px-4 py-2">
+                  {order.items.map((item, index) => (
+                    <div key={index}>
+                      {item.description} - {item.quantity} x GHC{" "}
+                      {item.price.toFixed(2)}
+                    </div>
+                  ))}
+                </td>
+                <td className="px-4 py-2">
+                  <div>
+                    <div className="font-semibold">{order.paymentMethod}</div>
+                    {(order.paymentMethod === 'momo/cash' || order.paymentType === 'partial') && (
+                      <div className="text-sm text-gray-600">
+                        {order.cashAmount > 0 && (
+                          <div>Cash: GHC {parseFloat(order.cashAmount).toFixed(2)}</div>
+                        )}
+                        {order.momoAmount > 0 && (
+                          <div>Momo: GHC {parseFloat(order.momoAmount).toFixed(2)}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ))}
-                <div className="flex justify-end gap-2 mt-4">
-                  <button
-                    onClick={() => setEditingOrder(null)}
-                    className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveEdit}
-                    className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="order-items">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left">
-                      <th className="py-2">Item</th>
-                      <th className="py-2">Quantity</th>
-                      <th className="py-2">Price</th>
-                      <th className="py-2">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {order.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="py-1">{item.description || item.name}</td>
-                        <td className="py-1">{item.quantity}</td>
-                        <td className="py-1">GHC {item.price}</td>
-                        <td className="py-1">GHC {(item.quantity * item.price).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="order-total mt-2 text-right">
-                  <p className="font-semibold">
-                    Total: GHC {order.items.reduce((sum, item) => sum + item.quantity * item.price, 0).toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+                </td>
+                <td className="px-4 py-2">
+                  GHC{" "}
+                  {order.items
+                    .reduce(
+                      (sum, item) =>
+                        sum + item.quantity * item.price,
+                      0
+                    )
+                    .toFixed(2)}
+                </td>
+                <td className="px-4 py-2">
+                  {new Date(order.createdAt).toLocaleString()}
+                </td>
+                <td className="px-4 py-2">{order.invoiceNumber}</td>
+                <td className="px-4 py-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(order)}
+                      className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(order._id)}
+                      className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
