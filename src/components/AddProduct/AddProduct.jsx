@@ -41,37 +41,40 @@ const AddProduct = () => {
     }
   };
 
-  // Check for existing product when name or category changes
+  // Check for existing product when name changes
   useEffect(() => {
     const checkExistingProduct = async () => {
-      if (productData.name && productData.category) {
+      if (productData.name) {
         try {
           const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products");
           const found = response.data.products.find(
-            product => product.name.toLowerCase() === productData.name.toLowerCase() &&
-                      product.category === productData.category
+            product => product.name.toLowerCase() === productData.name.toLowerCase()
           );
           
           if (found) {
             setExistingProduct(found);
             setProductData(prev => ({
               ...prev,
+              category: found.category,
               price: {
                 retail_price: found.price.retail_price,
                 whole_sale_price: found.price.whole_sale_price
               }
             }));
+            toast.info("Product exists - prices auto-filled and quantity will be added to existing stock");
           } else {
             setExistingProduct(null);
           }
         } catch (error) {
           console.error("Error checking for existing product:", error);
+          toast.error("Error checking for existing product");
         }
       }
     };
 
-    checkExistingProduct();
-  }, [productData.name, productData.category]);
+    const timeoutId = setTimeout(checkExistingProduct, 500); // Debounce the API call
+    return () => clearTimeout(timeoutId);
+  }, [productData.name]);
 
   // Submit Form
   const handleSubmit = async (e) => {
