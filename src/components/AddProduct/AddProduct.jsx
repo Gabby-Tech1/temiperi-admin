@@ -4,13 +4,14 @@ import { Sidebar } from "../Sidebar/Sidebar";
 import Orders from "../Orders/Orders";
 import Header from "../Header/Header";
 import axios from "axios";
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AddProduct = () => {
   // Determine base URL dynamically
   const devUrl = "http://localhost:4000/temiperi/products";
-  const prodUrl = "https://temiperi-stocks-backend.onrender.com/temiperi/products";
+  const prodUrl =
+    "https://temiperi-stocks-backend.onrender.com/temiperi/products";
   const baseUrl = window.location.hostname === "localhost" ? devUrl : prodUrl;
 
   // State for form fields
@@ -46,22 +47,27 @@ const AddProduct = () => {
     const checkExistingProduct = async () => {
       if (productData.name) {
         try {
-          const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products");
-          const found = response.data.products.find(
-            product => product.name.toLowerCase() === productData.name.toLowerCase()
+          const response = await axios.get(
+            "https://temiperi-stocks-backend.onrender.com/temiperi/products"
           );
-          
+          const found = response.data.products.find(
+            (product) =>
+              product.name.toLowerCase() === productData.name.toLowerCase()
+          );
+
           if (found) {
             setExistingProduct(found);
-            setProductData(prev => ({
+            setProductData((prev) => ({
               ...prev,
               category: found.category,
               price: {
                 retail_price: found.price.retail_price,
-                whole_sale_price: found.price.whole_sale_price
-              }
+                whole_sale_price: found.price.whole_sale_price,
+              },
             }));
-            toast.info("Product exists - prices auto-filled and quantity will be added to existing stock");
+            toast.info(
+              "Product exists - prices auto-filled and quantity will be added to existing stock"
+            );
           } else {
             setExistingProduct(null);
           }
@@ -81,17 +87,21 @@ const AddProduct = () => {
     e.preventDefault();
     try {
       if (existingProduct) {
-        const updatedQuantity = parseInt(existingProduct.quantity) + parseInt(productData.quantity);
+        const updatedQuantity =
+          parseInt(existingProduct.quantity) + parseInt(productData.quantity);
         await axios.patch(
           `https://temiperi-stocks-backend.onrender.com/temiperi/products/?id=${existingProduct._id}`,
           {
             ...existingProduct,
-            quantity: updatedQuantity
+            quantity: updatedQuantity,
           }
         );
         toast.success("Product quantity updated successfully!");
       } else {
-        await axios.post("https://temiperi-stocks-backend.onrender.com/temiperi/products", productData);
+        await axios.post(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/products",
+          productData
+        );
         toast.success("New product added successfully!");
       }
 
@@ -121,7 +131,6 @@ const AddProduct = () => {
         <h2>Add New Products</h2>
         <p>Please enter the product details in the table below</p>
         <div className="addproduct_container">
-          <Sidebar />
           <form className="addproduct" onSubmit={handleSubmit}>
             <label>
               Category
@@ -183,7 +192,7 @@ const AddProduct = () => {
             </label>
             <div className="btn">
               <button type="submit">
-                {existingProduct ? 'Update Quantity' : 'Add Product'}
+                {existingProduct ? "Update Quantity" : "Add Product"}
               </button>
             </div>
           </form>

@@ -50,6 +50,7 @@ const App = ({ data }) => {
                   <Route path="/get-report" element={<ViewReports />} />
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/expenses" element={<Expenses />} />
+                  <Route path="/analysis" element={<Analysis />} />
                   <Route path="/summary" element={<Summary />} />
                 </Routes>
               </div>

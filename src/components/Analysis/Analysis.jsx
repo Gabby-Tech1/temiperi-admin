@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from "react";
-import "./analysis.css";
-import { Sidebar } from "../Sidebar/Sidebar";
-import { NavLink } from "react-router-dom";
-import { Bar, Line } from "react-chartjs-2";
+import { Bar, Line, Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS } from "chart.js/auto";
 import axios from "axios";
-import Header from "../Header/Header";
-import Footer from "../Footer/Footer";
+import { MdTrendingUp, MdTrendingDown } from "react-icons/md";
+import { BsArrowUpRight, BsArrowDownRight } from "react-icons/bs";
 
 const Analysis = () => {
   const [salesData, setSalesData] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedTimeFrame, setSelectedTimeFrame] = useState("monthly"); // 'monthly', 'weekly', 'daily'
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState("monthly");
+  const [selectedProduct, setSelectedProduct] = useState("all");
+  const [products, setProducts] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [timeFrameData, setTimeFrameData] = useState({
     labels: [],
@@ -22,6 +21,22 @@ const Analysis = () => {
     highest: 0,
     lowest: 0,
     total: 0,
+  });
+  const [productPerformance, setProductPerformance] = useState({
+    timeLabels: [],
+    datasets: [],
+    summary: {
+      totalRevenue: 0,
+      totalQuantity: 0,
+      averageOrderValue: 0,
+      bestPerformingPeriod: "",
+      worstPerformingPeriod: "",
+      bestPerformingProduct: {
+        name: "",
+        revenue: 0,
+        quantity: 0
+      }
+    },
   });
 
   // Fetch orders data
@@ -36,6 +51,7 @@ const Analysis = () => {
         processOrdersData(orders);
         calculateTopProducts(orders);
         updateTimeFrameAnalysis(orders);
+        processProductPerformance(orders);
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -46,7 +62,224 @@ const Analysis = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [selectedYear, selectedMonth, selectedTimeFrame]);
+  }, [selectedYear, selectedMonth, selectedTimeFrame, selectedProduct]);
+
+  // Process product performance data
+  const processProductPerformance = (orders) => {
+    // Extract unique products
+    const uniqueProducts = new Set();
+    orders.forEach(order => {
+      order.items.forEach(item => uniqueProducts.add(item.name));
+    });
+    setProducts(Array.from(uniqueProducts));
+
+    // Filter orders based on selected time frame
+    const filteredOrders = orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      const orderYear = orderDate.getFullYear();
+      const orderMonth = orderDate.getMonth();
+
+      if (selectedTimeFrame === 'monthly') {
+        return orderYear === selectedYear;
+      } else {
+        return orderYear === selectedYear && orderMonth === selectedMonth;
+      }
+    });
+
+    // Process data
+    const timeFrameData = new Map();
+    const productData = new Map();
+
+    filteredOrders.forEach(order => {
+      const orderDate = new Date(order.createdAt);
+      let timeKey = '';
+
+      switch (selectedTimeFrame) {
+        case 'monthly':
+          timeKey = orderDate.getMonth();
+          break;
+        case 'weekly':
+          const weekNum = Math.ceil((orderDate.getDate() + 
+            new Date(orderDate.getFullYear(), orderDate.getMonth(), 1).getDay()) / 7);
+          timeKey = `Week ${weekNum}`;
+          break;
+        case 'daily':
+          timeKey = orderDate.getDate();
+          break;
+      }
+
+      order.items.forEach(item => {
+        if (selectedProduct === 'all' || selectedProduct === item.name) {
+          const amount = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+          const quantity = parseFloat(item.quantity) || 0;
+
+          if (!timeFrameData.has(timeKey)) {
+            timeFrameData.set(timeKey, { revenue: 0, quantity: 0, orders: 0 });
+          }
+          const timeData = timeFrameData.get(timeKey);
+          timeData.revenue += amount;
+          timeData.quantity += quantity;
+          timeData.orders += 1;
+
+          if (!productData.has(item.name)) {
+            productData.set(item.name, { revenue: 0, quantity: 0, orders: 0 });
+          }
+          const prodData = productData.get(item.name);
+          prodData.revenue += amount;
+          prodData.quantity += quantity;
+          prodData.orders += 1;
+        }
+      });
+    });
+
+    // Find best performing product
+    let bestProduct = { name: "", revenue: 0, quantity: 0 };
+    productData.forEach((data, name) => {
+      if (data.revenue > bestProduct.revenue) {
+        bestProduct = {
+          name,
+          revenue: data.revenue,
+          quantity: data.quantity
+        };
+      }
+    });
+
+    // Prepare performance summary
+    const totalRevenue = Array.from(productData.values())
+      .reduce((sum, data) => sum + data.revenue, 0);
+    const totalQuantity = Array.from(productData.values())
+      .reduce((sum, data) => sum + data.quantity, 0);
+    const totalOrders = Array.from(productData.values())
+      .reduce((sum, data) => sum + data.orders, 0);
+    
+    setProductPerformance({
+      ...productPerformance,
+      summary: {
+        totalRevenue,
+        totalQuantity,
+        averageOrderValue: totalOrders ? totalRevenue / totalOrders : 0,
+        bestPerformingPeriod: getBestPerformingPeriod(timeFrameData),
+        worstPerformingPeriod: getWorstPerformingPeriod(timeFrameData),
+        bestPerformingProduct: bestProduct
+      }
+    });
+  };
+
+  const getBestPerformingPeriod = (timeFrameData) => {
+    let bestPeriod = '';
+    let maxRevenue = -1;
+    timeFrameData.forEach((data, period) => {
+      if (data.revenue > maxRevenue) {
+        maxRevenue = data.revenue;
+        bestPeriod = period;
+      }
+    });
+    return formatPeriod(bestPeriod);
+  };
+
+  const getWorstPerformingPeriod = (timeFrameData) => {
+    let worstPeriod = '';
+    let minRevenue = Infinity;
+    timeFrameData.forEach((data, period) => {
+      if (data.revenue < minRevenue && data.revenue > 0) {
+        minRevenue = data.revenue;
+        worstPeriod = period;
+      }
+    });
+    return formatPeriod(worstPeriod);
+  };
+
+  const formatPeriod = (period) => {
+    if (selectedTimeFrame === 'monthly') {
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      return monthNames[period];
+    }
+    return period.toString();
+  };
+
+  // Process orders data for monthly sales chart
+  const processOrdersData = (orders) => {
+    const monthlySales = Array(12).fill(0);
+
+    orders.forEach((order) => {
+      const orderDate = new Date(order.createdAt);
+      const orderYear = orderDate.getFullYear();
+
+      if (orderYear === selectedYear) {
+        const month = orderDate.getMonth();
+        const orderTotal = order.items.reduce((total, item) => {
+          const price = parseFloat(item.price) || 0;
+          const quantity = parseFloat(item.quantity) || 0;
+          return total + price * quantity;
+        }, 0);
+        monthlySales[month] += orderTotal;
+      }
+    });
+
+    setSalesData(monthlySales);
+  };
+
+  // Calculate top products by total amount
+  const calculateTopProducts = (orders) => {
+    // Create a map to store product totals
+    const productTotals = new Map();
+
+    // Process all orders and their items
+    orders.forEach((order) => {
+      if (!order.items || !Array.isArray(order.items)) {
+        console.log("Invalid order:", order);
+        return;
+      }
+
+      order.items.forEach((item) => {
+        // Debug log to see item structure
+        console.log("Processing item:", item);
+
+        // Try to get product name from all possible locations
+        const productName = item.product?.name || item.productName || item.name;
+
+        if (!productName) {
+          console.log("No product name found in item:", item);
+          return;
+        }
+
+        const price =
+          parseFloat(item.price) || parseFloat(item.product?.price) || 0;
+        const quantity = parseFloat(item.quantity) || 0;
+        const itemTotal = price * quantity;
+
+        // If product exists in map, update its totals
+        if (productTotals.has(productName)) {
+          const product = productTotals.get(productName);
+          product.totalAmount += itemTotal;
+          product.totalQuantity += quantity;
+          product.orders += 1;
+        } else {
+          // Add new product to map
+          productTotals.set(productName, {
+            name: productName,
+            totalAmount: itemTotal,
+            totalQuantity: quantity,
+            unitPrice: price,
+            orders: 1,
+          });
+        }
+      });
+    });
+
+    // Debug log for product totals
+    console.log("Product totals:", Array.from(productTotals.entries()));
+
+    // Convert map to array and sort by total amount
+    const sortedProducts = Array.from(productTotals.values())
+      .filter((product) => product.totalAmount > 0)
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .slice(0, 4);
+
+    console.log("Top products:", sortedProducts);
+    setTopProducts(sortedProducts);
+  };
 
   // Process time-based analysis
   const updateTimeFrameAnalysis = (orders) => {
@@ -149,376 +382,308 @@ const Analysis = () => {
     });
   };
 
-  // Calculate top products by total amount
-  const calculateTopProducts = (orders) => {
-    // Create a map to store product totals
-    const productTotals = new Map();
-
-    // Process all orders and their items
-    orders.forEach((order) => {
-      if (!order.items || !Array.isArray(order.items)) {
-        console.log("Invalid order:", order);
-        return;
-      }
-
-      order.items.forEach((item) => {
-        // Debug log to see item structure
-        console.log("Processing item:", item);
-
-        // Try to get product name from all possible locations
-        const productName = item.product?.name || item.productName || item.name;
-
-        if (!productName) {
-          console.log("No product name found in item:", item);
-          return;
-        }
-
-        const price =
-          parseFloat(item.price) || parseFloat(item.product?.price) || 0;
-        const quantity = parseFloat(item.quantity) || 0;
-        const itemTotal = price * quantity;
-
-        // If product exists in map, update its totals
-        if (productTotals.has(productName)) {
-          const product = productTotals.get(productName);
-          product.totalAmount += itemTotal;
-          product.totalQuantity += quantity;
-          product.orders += 1;
-        } else {
-          // Add new product to map
-          productTotals.set(productName, {
-            name: productName,
-            totalAmount: itemTotal,
-            totalQuantity: quantity,
-            unitPrice: price,
-            orders: 1,
-          });
-        }
-      });
-    });
-
-    // Debug log for product totals
-    console.log("Product totals:", Array.from(productTotals.entries()));
-
-    // Convert map to array and sort by total amount
-    const sortedProducts = Array.from(productTotals.values())
-      .filter((product) => product.totalAmount > 0)
-      .sort((a, b) => b.totalAmount - a.totalAmount)
-      .slice(0, 4);
-
-    console.log("Top products:", sortedProducts);
-    setTopProducts(sortedProducts);
-  };
-
-  // Process orders data for monthly sales chart
-  const processOrdersData = (orders) => {
-    const monthlySales = Array(12).fill(0);
-
-    orders.forEach((order) => {
-      const orderDate = new Date(order.createdAt);
-      const orderYear = orderDate.getFullYear();
-
-      if (orderYear === selectedYear) {
-        const month = orderDate.getMonth();
-        const orderTotal = order.items.reduce((total, item) => {
-          const price = parseFloat(item.price) || 0;
-          const quantity = parseFloat(item.quantity) || 0;
-          return total + price * quantity;
-        }, 0);
-        monthlySales[month] += orderTotal;
-      }
-    });
-
-    setSalesData(monthlySales);
-  };
-
-  const TimeFrameChart = () => {
-    const data = {
-      labels: timeFrameData.labels,
-      datasets: [
-        {
-          label: `Sales (GH₵) - ${
-            selectedTimeFrame.charAt(0).toUpperCase() +
-            selectedTimeFrame.slice(1)
-          }`,
-          data: timeFrameData.values,
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-          borderColor: "rgba(75, 192, 192, 1)",
-          borderWidth: 1,
-          tension: 0.4,
-        },
-      ],
-    };
-
-    const options = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-        tooltip: {
-          callbacks: {
-            label: (context) =>
-              `GH₵ ${context.raw.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`,
-          },
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: "Sales in Cedis (GH₵)",
-          },
-          ticks: {
-            callback: (value) => `GH₵ ${value.toLocaleString()}`,
-          },
-        },
-      },
-    };
-
-    return (
-      <div style={{ width: "100%", height: "400px" }}>
-        {selectedTimeFrame === "monthly" ? (
-          <Bar data={data} options={options} />
-        ) : (
-          <Line data={data} options={options} />
-        )}
-      </div>
-    );
-  };
-
-  const MyBarChart = () => {
-    const data = {
-      labels: [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ],
-      datasets: [
-        {
-          label: `Sales (GH₵) - ${selectedYear}`,
-          data: salesData,
-          backgroundColor: "rgba(75, 192, 192, 0.6)",
-          borderColor: "rgba(75, 192, 192, 1)",
-          borderWidth: 1,
-        },
-      ],
-    };
-
-    const options = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            label: (context) => {
-              return `GH₵ ${context.raw.toLocaleString()}`;
-            },
-          },
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: "Sales in Cedis (GH₵)",
-          },
-          ticks: {
-            callback: (value) => `GH₵ ${value.toLocaleString()}`,
-          },
-        },
-        x: {
-          title: {
-            display: true,
-            text: "Months",
-          },
-        },
-      },
-    };
-
-    return (
-      <div style={{ width: "600px", height: "400px" }}>
-        <Bar data={data} options={options} />
-      </div>
-    );
-  };
-
   return (
-    <div className="mt-10">
-      <h2>Sales Analysis</h2>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-[1800px] mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Sales</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.total.toFixed(2)}
+                </h3>
+                <p className="text-sm text-green-600 flex items-center mt-2">
+                  <BsArrowUpRight className="mr-1" />
+                  +2.5% from last period
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
+                <MdTrendingUp className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
 
-      <div className="container">
-        <div className="div">
-          <div className="analysis-controls">
-            <div className="time-frame-selector">
-              <label>
-                View By:
-                <select
-                  value={selectedTimeFrame}
-                  onChange={(e) => setSelectedTimeFrame(e.target.value)}
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="daily">Daily</option>
-                </select>
-              </label>
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Average Sale</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.average.toFixed(2)}
+                </h3>
+                <p className="text-sm text-red-600 flex items-center mt-2">
+                  <BsArrowDownRight className="mr-1" />
+                  -0.8% from last period
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+                <MdTrendingDown className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
 
-              <label>
-                Year:
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Highest Sale</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.highest.toFixed(2)}
+                </h3>
+                <p className="text-sm text-green-600 flex items-center mt-2">
+                  <BsArrowUpRight className="mr-1" />
+                  Peak performance
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+                <MdTrendingUp className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Lowest Sale</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.lowest.toFixed(2)}
+                </h3>
+                <p className="text-sm text-yellow-600 flex items-center mt-2">
+                  <MdTrendingDown className="mr-1" />
+                  Room for improvement
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
+                <MdTrendingDown className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Performance Section */}
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Product Performance</h2>
+            <div className="flex items-center space-x-4">
+              <select
+                value={selectedProduct}
+                onChange={(e) => setSelectedProduct(e.target.value)}
+                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Products</option>
+                {products.map((product, index) => (
+                  <option key={index} value={product}>
+                    {product}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-sm text-blue-600">Total Revenue</p>
+              <h4 className="text-xl font-bold text-blue-900 mt-1">
+                GH₵{productPerformance.summary.totalRevenue.toFixed(2)}
+              </h4>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <p className="text-sm text-green-600">Total Quantity</p>
+              <h4 className="text-xl font-bold text-green-900 mt-1">
+                {productPerformance.summary.totalQuantity}
+              </h4>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <p className="text-sm text-purple-600">Average Order Value</p>
+              <h4 className="text-xl font-bold text-purple-900 mt-1">
+                GH₵{productPerformance.summary.averageOrderValue.toFixed(2)}
+              </h4>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <p className="text-sm text-yellow-600">Best Period</p>
+              <h4 className="text-xl font-bold text-yellow-900 mt-1">
+                {productPerformance.summary.bestPerformingPeriod}
+              </h4>
+            </div>
+            <div className="bg-indigo-50 p-4 rounded-lg">
+              <p className="text-sm text-indigo-600">Best Product</p>
+              <h4 className="text-xl font-bold text-indigo-900 mt-1">
+                {productPerformance.summary.bestPerformingProduct.name}
+              </h4>
+              <p className="text-sm text-indigo-600 mt-1">
+                GH₵{productPerformance.summary.bestPerformingProduct.revenue.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Time Frame Controls */}
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Sales Analysis</h2>
+            <div className="flex items-center space-x-4">
+              <select
+                value={selectedTimeFrame}
+                onChange={(e) => setSelectedTimeFrame(e.target.value)}
+                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+                <option value="daily">Daily</option>
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {[...Array(5)].map((_, i) => (
+                  <option key={i} value={new Date().getFullYear() - i}>
+                    {new Date().getFullYear() - i}
+                  </option>
+                ))}
+              </select>
+              {selectedTimeFrame !== "monthly" && (
                 <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {[2023, 2024, 2025].map((year) => (
-                    <option key={year} value={year}>
-                      {year}
+                  {[
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                  ].map((month, index) => (
+                    <option key={index} value={index}>
+                      {month}
                     </option>
                   ))}
                 </select>
-              </label>
-
-              {selectedTimeFrame !== "monthly" && (
-                <label>
-                  Month:
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  >
-                    {[
-                      "January",
-                      "February",
-                      "March",
-                      "April",
-                      "May",
-                      "June",
-                      "July",
-                      "August",
-                      "September",
-                      "October",
-                      "November",
-                      "December",
-                    ].map((month, index) => (
-                      <option key={index} value={index}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               )}
             </div>
           </div>
 
-          <div className="chart_container">
-            {loading ? (
-              <div>Loading sales data...</div>
-            ) : (
-              <>
-                <div className="sales-summary">
-                  <div className="summary-card">
-                    <h4>Total Sales</h4>
-                    <p>
-                      GH₵{" "}
-                      {timeFrameData.total.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                  </div>
-                  <div className="summary-card">
-                    <h4>Average Sales</h4>
-                    <p>
-                      GH₵{" "}
-                      {timeFrameData.average.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                  </div>
-                  <div className="summary-card">
-                    <h4>Highest Sales</h4>
-                    <p>
-                      GH₵{" "}
-                      {timeFrameData.highest.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                  </div>
-                  <div className="summary-card">
-                    <h4>Lowest Sales</h4>
-                    <p>
-                      GH₵{" "}
-                      {timeFrameData.lowest.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="myChart">
-                  <TimeFrameChart />
-                </div>
-
-                <div className="best_performing_product">
-                  <h4>Top Selling Products</h4>
-                  <div className="best_products">
-                    {topProducts && topProducts.length > 0 ? (
-                      topProducts.map((product, index) => (
-                        <div key={index} className="products_details">
-                          <p
-                            className="product-name"
-                            style={{ fontWeight: "bold", marginBottom: "8px" }}
-                          >
-                            {index + 1}. {product.name || "Unknown Product"}
-                          </p>
-                          <small className="total-amount">
-                            Total Revenue: GH₵{" "}
-                            {product.totalAmount.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </small>
-                          <small className="quantity">
-                            Total Quantity Sold: {product.totalQuantity}
-                          </small>
-                          <small className="orders">
-                            Number of Orders: {product.orders}
-                          </small>
-                        </div>
-                      ))
-                    ) : (
-                      <div>No products found</div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
+          {/* Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-4 rounded-lg">
+              <Bar
+                data={{
+                  labels: timeFrameData.labels,
+                  datasets: [
+                    {
+                      label: "Sales",
+                      data: timeFrameData.values,
+                      backgroundColor: "rgba(59, 130, 246, 0.5)",
+                      borderColor: "rgb(59, 130, 246)",
+                      borderWidth: 1,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      display: false,
+                    },
+                    title: {
+                      display: true,
+                      text: "Sales Distribution",
+                    },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                    },
+                  },
+                }}
+              />
+            </div>
+            <div className="bg-white p-4 rounded-lg">
+              <Line
+                data={{
+                  labels: timeFrameData.labels,
+                  datasets: [
+                    {
+                      label: "Sales Trend",
+                      data: timeFrameData.values,
+                      borderColor: "rgb(34, 197, 94)",
+                      tension: 0.4,
+                      fill: true,
+                      backgroundColor: "rgba(34, 197, 94, 0.1)",
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      display: false,
+                    },
+                    title: {
+                      display: true,
+                      text: "Sales Trend",
+                    },
+                  },
+                }}
+              />
+            </div>
           </div>
+        </div>
 
-          <div className="btn report">
-            <NavLink to={"/report"}>
-              <button>Write Report</button>
-            </NavLink>
+        {/* Top Products Table */}
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <h2 className="text-xl font-semibold mb-6">Top Performing Products</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Product
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Sales
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quantity Sold
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Orders
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {topProducts.map((product, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {product.name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        GH₵{product.totalAmount.toFixed(2)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {product.totalQuantity}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{product.orders}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
