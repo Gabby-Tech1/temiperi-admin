@@ -573,7 +573,7 @@ const Analysis = () => {
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-4 rounded-lg">
+            <div className="bg-white p-4 rounded-lg h-[400px] relative">
               <Bar
                 data={{
                   labels: timeFrameData.labels,
@@ -589,6 +589,7 @@ const Analysis = () => {
                 }}
                 options={{
                   responsive: true,
+                  maintainAspectRatio: false,
                   plugins: {
                     legend: {
                       display: false,
@@ -601,6 +602,9 @@ const Analysis = () => {
                   scales: {
                     y: {
                       beginAtZero: true,
+                      ticks: {
+                        callback: (value) => `GH₵${value}`,
+                      },
                     },
                   },
                 }}
