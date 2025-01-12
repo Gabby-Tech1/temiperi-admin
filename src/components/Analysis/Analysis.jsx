@@ -39,6 +39,60 @@ const Analysis = () => {
     },
   });
 
+  // Add 24-hour reset functionality
+  useEffect(() => {
+    // Function to check and reset sales data
+    const checkAndResetSales = () => {
+      const now = new Date();
+      const lastResetTime = localStorage.getItem('lastSalesResetTime');
+      
+      if (!lastResetTime || (now - new Date(lastResetTime)) >= 24 * 60 * 60 * 1000) {
+        // Reset sales data
+        setSalesData({});
+        setTimeFrameData({
+          labels: [],
+          values: [],
+          average: 0,
+          highest: 0,
+          lowest: 0,
+          total: 0,
+        });
+        setProductPerformance({
+          timeLabels: [],
+          datasets: [],
+          summary: {
+            totalRevenue: 0,
+            totalQuantity: 0,
+            averageOrderValue: 0,
+            bestPerformingPeriod: "",
+            worstPerformingPeriod: "",
+            bestPerformingProduct: {
+              name: "",
+              revenue: 0,
+              quantity: 0
+            }
+          },
+        });
+        setTopProducts([]);
+        
+        // Update last reset time
+        localStorage.setItem('lastSalesResetTime', now.toISOString());
+        
+        // Fetch fresh data
+        fetchOrders();
+      }
+    };
+
+    // Check on component mount
+    checkAndResetSales();
+
+    // Set up interval to check every hour
+    const interval = setInterval(checkAndResetSales, 60 * 60 * 1000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
+  }, []);
+
   // Fetch orders data
   const fetchOrders = async () => {
     try {
@@ -201,12 +255,16 @@ const Analysis = () => {
   // Process orders data for monthly sales chart
   const processOrdersData = (orders) => {
     const monthlySales = Array(12).fill(0);
+    const today = new Date();
 
     orders.forEach((order) => {
       const orderDate = new Date(order.createdAt);
-      const orderYear = orderDate.getFullYear();
-
-      if (orderYear === selectedYear) {
+      
+      // Only process orders from today
+      if (orderDate.getFullYear() === today.getFullYear() &&
+          orderDate.getMonth() === today.getMonth() &&
+          orderDate.getDate() === today.getDate()) {
+            
         const month = orderDate.getMonth();
         const orderTotal = order.items.reduce((total, item) => {
           const price = parseFloat(item.price) || 0;
@@ -222,77 +280,70 @@ const Analysis = () => {
 
   // Calculate top products by total amount
   const calculateTopProducts = (orders) => {
-    // Create a map to store product totals
     const productTotals = new Map();
+    const today = new Date();
 
-    // Process all orders and their items
     orders.forEach((order) => {
-      if (!order.items || !Array.isArray(order.items)) {
-        console.log("Invalid order:", order);
-        return;
-      }
+      const orderDate = new Date(order.createdAt);
+      
+      // Only process orders from today
+      if (orderDate.getFullYear() === today.getFullYear() &&
+          orderDate.getMonth() === today.getMonth() &&
+          orderDate.getDate() === today.getDate()) {
 
-      order.items.forEach((item) => {
-        // Debug log to see item structure
-        console.log("Processing item:", item);
-
-        // Try to get product name from all possible locations
-        const productName = item.product?.name || item.productName || item.name;
-
-        if (!productName) {
-          console.log("No product name found in item:", item);
+        if (!order.items || !Array.isArray(order.items)) {
+          console.log("Invalid order:", order);
           return;
         }
 
-        const price =
-          parseFloat(item.price) || parseFloat(item.product?.price) || 0;
-        const quantity = parseFloat(item.quantity) || 0;
-        const itemTotal = price * quantity;
+        order.items.forEach((item) => {
+          const productName = item.product?.name || item.productName || item.name;
 
-        // If product exists in map, update its totals
-        if (productTotals.has(productName)) {
-          const product = productTotals.get(productName);
-          product.totalAmount += itemTotal;
-          product.totalQuantity += quantity;
-          product.orders += 1;
-        } else {
-          // Add new product to map
-          productTotals.set(productName, {
-            name: productName,
-            totalAmount: itemTotal,
-            totalQuantity: quantity,
-            unitPrice: price,
-            orders: 1,
-          });
-        }
-      });
+          if (!productName) {
+            console.log("No product name found in item:", item);
+            return;
+          }
+
+          const price = parseFloat(item.price) || parseFloat(item.product?.price) || 0;
+          const quantity = parseFloat(item.quantity) || 0;
+          const itemTotal = price * quantity;
+
+          if (productTotals.has(productName)) {
+            const product = productTotals.get(productName);
+            product.totalAmount += itemTotal;
+            product.totalQuantity += quantity;
+            product.orders += 1;
+          } else {
+            productTotals.set(productName, {
+              name: productName,
+              totalAmount: itemTotal,
+              totalQuantity: quantity,
+              unitPrice: price,
+              orders: 1,
+            });
+          }
+        });
+      }
     });
 
-    // Debug log for product totals
-    console.log("Product totals:", Array.from(productTotals.entries()));
-
-    // Convert map to array and sort by total amount
     const sortedProducts = Array.from(productTotals.values())
       .filter((product) => product.totalAmount > 0)
       .sort((a, b) => b.totalAmount - a.totalAmount)
       .slice(0, 4);
 
-    console.log("Top products:", sortedProducts);
     setTopProducts(sortedProducts);
   };
 
   // Process time-based analysis
   const updateTimeFrameAnalysis = (orders) => {
+    const today = new Date();
     const filteredOrders = orders.filter((order) => {
       const orderDate = new Date(order.createdAt);
-      const orderYear = orderDate.getFullYear();
-      const orderMonth = orderDate.getMonth();
-
-      if (selectedTimeFrame === "monthly") {
-        return orderYear === selectedYear;
-      } else {
-        return orderYear === selectedYear && orderMonth === selectedMonth;
-      }
+      
+      // Only process orders from today
+      return orderDate.getFullYear() === today.getFullYear() &&
+             orderDate.getMonth() === today.getMonth() &&
+             orderDate.getDate() === today.getDate();
     });
 
     let timeFrameMap = new Map();
@@ -301,26 +352,19 @@ const Analysis = () => {
 
     filteredOrders.forEach((order) => {
       const orderDate = new Date(order.createdAt);
-      let key = "";
+      let key = '';
 
       switch (selectedTimeFrame) {
-        case "monthly":
+        case 'monthly':
           key = orderDate.getMonth(); // 0-11
           break;
-        case "weekly":
+        case 'weekly':
           // Get week number within the month
-          const weekNum = Math.ceil(
-            (orderDate.getDate() +
-              new Date(
-                orderDate.getFullYear(),
-                orderDate.getMonth(),
-                1
-              ).getDay()) /
-              7
-          );
+          const weekNum = Math.ceil((orderDate.getDate() + 
+            new Date(orderDate.getFullYear(), orderDate.getMonth(), 1).getDay()) / 7);
           key = `Week ${weekNum}`;
           break;
-        case "daily":
+        case 'daily':
           key = orderDate.getDate(); // 1-31
           break;
       }

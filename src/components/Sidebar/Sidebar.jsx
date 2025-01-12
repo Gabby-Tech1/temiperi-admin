@@ -44,7 +44,7 @@ export const Sidebar = () => {
       text: "View Reports",
       path: "/get-report",
     },
-    { icon: <BsGear size={20} />, text: "Settings", path: "/settings" },
+    // { icon: <BsGear size={20} />, text: "Settings", path: "/settings" },
   ];
 
   const toggleSidebar = () => {
