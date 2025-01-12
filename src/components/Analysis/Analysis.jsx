@@ -420,8 +420,8 @@ const Analysis = () => {
       labels,
       values,
       average,
-      highest: Math.max(...values),
-      lowest: Math.min(...nonZeroValues),
+      highest: values.length ? Math.max(...values) : 0,
+      lowest: nonZeroValues.length ? Math.min(...nonZeroValues) : 0,
       total: values.reduce((a, b) => a + b, 0),
     });
   };
