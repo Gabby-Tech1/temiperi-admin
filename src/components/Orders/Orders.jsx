@@ -307,23 +307,37 @@ const Orders = () => {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <h2 className="text-xl font-bold mb-4">Edit Order</h2>
-          
+
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Customer Name</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Customer Name
+              </label>
               <input
                 type="text"
-                value={editingOrder.customerName || ''}
-                onChange={(e) => setEditingOrder({...editingOrder, customerName: e.target.value})}
+                value={editingOrder.customerName || ""}
+                onChange={(e) =>
+                  setEditingOrder({
+                    ...editingOrder,
+                    customerName: e.target.value,
+                  })
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Payment Method
+              </label>
               <select
-                value={editingOrder.paymentMethod || ''}
-                onChange={(e) => setEditingOrder({...editingOrder, paymentMethod: e.target.value})}
+                value={editingOrder.paymentMethod || ""}
+                onChange={(e) =>
+                  setEditingOrder({
+                    ...editingOrder,
+                    paymentMethod: e.target.value,
+                  })
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="cash">Cash</option>
@@ -332,23 +346,37 @@ const Orders = () => {
               </select>
             </div>
 
-            {editingOrder.paymentMethod === 'momo/cash' && (
+            {editingOrder.paymentMethod === "momo/cash" && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Cash Amount</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Cash Amount
+                  </label>
                   <input
                     type="number"
                     value={editingOrder.cashAmount || 0}
-                    onChange={(e) => setEditingOrder({...editingOrder, cashAmount: parseFloat(e.target.value)})}
+                    onChange={(e) =>
+                      setEditingOrder({
+                        ...editingOrder,
+                        cashAmount: parseFloat(e.target.value),
+                      })
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Momo Amount</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Momo Amount
+                  </label>
                   <input
                     type="number"
                     value={editingOrder.momoAmount || 0}
-                    onChange={(e) => setEditingOrder({...editingOrder, momoAmount: parseFloat(e.target.value)})}
+                    onChange={(e) =>
+                      setEditingOrder({
+                        ...editingOrder,
+                        momoAmount: parseFloat(e.target.value),
+                      })
+                    }
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -356,24 +384,32 @@ const Orders = () => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Items</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Items
+              </label>
               {editingOrder.items.map((item, index) => (
                 <div key={index} className="flex gap-4 mb-2">
                   <div className="flex-1">
-                    <label className="block text-xs text-gray-500">Product</label>
+                    <label className="block text-xs text-gray-500">
+                      Product
+                    </label>
                     <input
                       type="text"
-                      value={item.name || ''}
+                      value={item.name || ""}
                       disabled
                       className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50"
                     />
                   </div>
                   <div className="w-24">
-                    <label className="block text-xs text-gray-500">Quantity</label>
+                    <label className="block text-xs text-gray-500">
+                      Quantity
+                    </label>
                     <input
                       type="number"
                       value={item.quantity}
-                      onChange={(e) => handleQuantityChange(index, e.target.value)}
+                      onChange={(e) =>
+                        handleQuantityChange(index, e.target.value)
+                      }
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
@@ -384,8 +420,14 @@ const Orders = () => {
                       value={item.price}
                       onChange={(e) => {
                         const updatedItems = [...editingOrder.items];
-                        updatedItems[index] = { ...item, price: parseFloat(e.target.value) || 0 };
-                        setEditingOrder({ ...editingOrder, items: updatedItems });
+                        updatedItems[index] = {
+                          ...item,
+                          price: parseFloat(e.target.value) || 0,
+                        };
+                        setEditingOrder({
+                          ...editingOrder,
+                          items: updatedItems,
+                        });
                       }}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />

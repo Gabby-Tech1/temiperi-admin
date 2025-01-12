@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { IoNotificationsOutline, IoSearchOutline } from "react-icons/io5";
 import { RiMenu3Line } from "react-icons/ri";
+import { useOrderContext } from "../../context/OrderContext";
 
 const Header = ({ showLogin, setShowLogin }) => {
   const [date, setDate] = useState(new Date());
+  const { newOrdersCount, resetNotifications } = useOrderContext();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -51,6 +53,7 @@ const Header = ({ showLogin, setShowLogin }) => {
               <Link
                 to="/orders"
                 className="text-gray-700 hover:text-gray-900 font-medium"
+                onClick={resetNotifications}
               >
                 Orders
               </Link>
@@ -64,12 +67,16 @@ const Header = ({ showLogin, setShowLogin }) => {
 
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <button className="p-2 rounded-full text-gray-500 hover:bg-gray-100">
-                  <IoNotificationsOutline size={24} />
-                  <span className="absolute top-0 right-0 h-5 w-5 text-xs flex items-center justify-center bg-red-500 text-white rounded-full">
-                    5
-                  </span>
-                </button>
+                <Link to="/orders" onClick={resetNotifications}>
+                  <button className="p-2 rounded-full text-gray-500 hover:bg-gray-100">
+                    <IoNotificationsOutline size={24} />
+                    {newOrdersCount > 0 && (
+                      <span className="absolute top-0 right-0 h-5 w-5 text-xs flex items-center justify-center bg-red-500 text-white rounded-full">
+                        {newOrdersCount}
+                      </span>
+                    )}
+                  </button>
+                </Link>
               </div>
 
               {!showLogin ? (
