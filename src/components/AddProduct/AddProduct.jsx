@@ -65,15 +65,11 @@ const AddProduct = () => {
                 whole_sale_price: found.price.whole_sale_price,
               },
             }));
-            toast.info(
-              "Product exists - prices auto-filled and quantity will be added to existing stock"
-            );
           } else {
             setExistingProduct(null);
           }
         } catch (error) {
           console.error("Error checking for existing product:", error);
-          toast.error("Error checking for existing product");
         }
       }
     };
