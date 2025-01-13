@@ -13,6 +13,7 @@ const Analysis = () => {
   const [selectedTimeFrame, setSelectedTimeFrame] = useState("monthly");
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [products, setProducts] = useState([]);
+  const [productsInventory, setProductsInventory] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [timeFrameData, setTimeFrameData] = useState({
     labels: [],
@@ -23,20 +24,14 @@ const Analysis = () => {
     total: 0,
   });
   const [productPerformance, setProductPerformance] = useState({
-    timeLabels: [],
-    datasets: [],
     summary: {
       totalRevenue: 0,
       totalQuantity: 0,
       averageOrderValue: 0,
-      bestPerformingPeriod: "",
-      worstPerformingPeriod: "",
-      bestPerformingProduct: {
-        name: "",
-        revenue: 0,
-        quantity: 0
-      }
-    },
+      bestPerformingPeriod: '',
+      worstPerformingPeriod: '',
+      bestPerformingProduct: { name: '', revenue: 0, quantity: 0 }
+    }
   });
 
   // Add 24-hour reset functionality
@@ -58,20 +53,14 @@ const Analysis = () => {
           total: 0,
         });
         setProductPerformance({
-          timeLabels: [],
-          datasets: [],
           summary: {
             totalRevenue: 0,
             totalQuantity: 0,
             averageOrderValue: 0,
-            bestPerformingPeriod: "",
-            worstPerformingPeriod: "",
-            bestPerformingProduct: {
-              name: "",
-              revenue: 0,
-              quantity: 0
-            }
-          },
+            bestPerformingPeriod: '',
+            worstPerformingPeriod: '',
+            bestPerformingProduct: { name: '', revenue: 0, quantity: 0 }
+          }
         });
         setTopProducts([]);
         
@@ -79,7 +68,32 @@ const Analysis = () => {
         localStorage.setItem('lastSalesResetTime', now.toISOString());
         
         // Fetch fresh data
-        fetchOrders();
+        const fetchData = async () => {
+          try {
+            const [ordersResponse, productsResponse] = await Promise.all([
+              axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/orders"),
+              axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products")
+            ]);
+
+            if (productsResponse?.data?.products) {
+              setProductsInventory(productsResponse.data.products);
+            }
+
+            if (ordersResponse?.data?.data) {
+              const orders = ordersResponse.data.data;
+              processOrdersData(orders);
+              calculateTopProducts(orders);
+              updateTimeFrameAnalysis(orders);
+              processProductPerformance(orders);
+            }
+          } catch (error) {
+            console.error("Error fetching data:", error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        fetchData();
       }
     };
 
@@ -93,29 +107,53 @@ const Analysis = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch orders data
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        "https://temiperi-stocks-backend.onrender.com/temiperi/orders"
-      );
-      if (response?.data?.data) {
-        const orders = response.data.data;
-        processOrdersData(orders);
-        calculateTopProducts(orders);
-        updateTimeFrameAnalysis(orders);
-        processProductPerformance(orders);
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Separate useEffect just for fetching products
   useEffect(() => {
-    fetchOrders();
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products");
+        if (response?.data?.products) {
+          const products = response.data.products;
+          setProductsInventory(products);
+          setProductPerformance(prev => ({
+            ...prev,
+            summary: {
+              ...prev.summary,
+              totalQuantity: products.reduce((total, product) => {
+                const quantity = parseInt(product.quantity) || 0;
+                return total + quantity;
+              }, 0)
+            }
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []); // Only run once on component mount
+
+  // Separate useEffect for orders and other data
+  useEffect(() => {
+    const fetchOrdersData = async () => {
+      try {
+        const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/orders");
+        if (response?.data?.data) {
+          const orders = response.data.data;
+          processOrdersData(orders);
+          calculateTopProducts(orders);
+          updateTimeFrameAnalysis(orders);
+          processProductPerformance(orders);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrdersData();
   }, [selectedYear, selectedMonth, selectedTimeFrame, selectedProduct]);
 
   // Process product performance data
@@ -123,7 +161,7 @@ const Analysis = () => {
     // Extract unique products
     const uniqueProducts = new Set();
     orders.forEach(order => {
-      order.items.forEach(item => uniqueProducts.add(item.name));
+      order.items.forEach(item => uniqueProducts.add(item.description));
     });
     setProducts(Array.from(uniqueProducts));
 
@@ -163,7 +201,7 @@ const Analysis = () => {
       }
 
       order.items.forEach(item => {
-        if (selectedProduct === 'all' || selectedProduct === item.name) {
+        if (selectedProduct === 'all' || selectedProduct === item.description) {
           const amount = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
           const quantity = parseFloat(item.quantity) || 0;
 
@@ -175,10 +213,10 @@ const Analysis = () => {
           timeData.quantity += quantity;
           timeData.orders += 1;
 
-          if (!productData.has(item.name)) {
-            productData.set(item.name, { revenue: 0, quantity: 0, orders: 0 });
+          if (!productData.has(item.description)) {
+            productData.set(item.description, { revenue: 0, quantity: 0, orders: 0 });
           }
-          const prodData = productData.get(item.name);
+          const prodData = productData.get(item.description);
           prodData.revenue += amount;
           prodData.quantity += quantity;
           prodData.orders += 1;
@@ -186,37 +224,38 @@ const Analysis = () => {
       });
     });
 
-    // Find best performing product
+    // Find best performing product based on revenue
     let bestProduct = { name: "", revenue: 0, quantity: 0 };
     productData.forEach((data, name) => {
+      console.log("Checking product:", name, "with revenue:", data.revenue); // Debug log
       if (data.revenue > bestProduct.revenue) {
         bestProduct = {
-          name,
+          name: name,
           revenue: data.revenue,
           quantity: data.quantity
         };
       }
     });
+    console.log("Best product found:", bestProduct); // Debug log
 
     // Prepare performance summary
     const totalRevenue = Array.from(productData.values())
       .reduce((sum, data) => sum + data.revenue, 0);
-    const totalQuantity = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.quantity, 0);
+    
     const totalOrders = Array.from(productData.values())
       .reduce((sum, data) => sum + data.orders, 0);
     
-    setProductPerformance({
-      ...productPerformance,
+    setProductPerformance(prev => ({
+      ...prev,
       summary: {
+        ...prev.summary,
         totalRevenue,
-        totalQuantity,
         averageOrderValue: totalOrders ? totalRevenue / totalOrders : 0,
         bestPerformingPeriod: getBestPerformingPeriod(timeFrameData),
         worstPerformingPeriod: getWorstPerformingPeriod(timeFrameData),
         bestPerformingProduct: bestProduct
       }
-    });
+    }));
   };
 
   const getBestPerformingPeriod = (timeFrameData) => {
@@ -534,7 +573,10 @@ const Analysis = () => {
             <div className="bg-green-50 p-4 rounded-lg">
               <p className="text-sm text-green-600">Total Quantity</p>
               <h4 className="text-xl font-bold text-green-900 mt-1">
-                {productPerformance.summary.totalQuantity}
+                {productsInventory.reduce((total, product) => {
+                  const quantity = parseInt(product.quantity) || 0;
+                  return total + quantity;
+                }, 0)}
               </h4>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg">
