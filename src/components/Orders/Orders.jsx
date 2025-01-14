@@ -29,53 +29,70 @@ const Orders = () => {
   // Fetch orders from API
   const fetchOrders = async () => {
     try {
-      const response = await axios.get(
-        "https://temiperi-stocks-backend.onrender.com/temiperi/orders"
-      );
-      if (response?.data) {
-        const allOrders = response?.data?.data || [];
+      const [ordersResponse, invoicesResponse] = await Promise.all([
+        axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/orders"),
+        axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/invoices")
+      ]);
+
+      if (ordersResponse?.data) {
+        const allOrders = ordersResponse?.data?.data || [];
         setOrderList(allOrders);
         console.log("Fetched orders:", allOrders);
-        // Calculate totals immediately after fetching
-        calculatePaymentTotals(allOrders);
-        // By default, show last 24 hours
+        // Filter orders by time window
         filterOrdersByTimeWindow(allOrders);
       } else {
         console.log("No orders found");
       }
-    } catch (error) {
-      console.error("Error fetching orders: ", error);
-    }
-  };
 
-  // Calculate payment method totals
-  const calculatePaymentTotals = (orders) => {
-    console.log("Calculating totals for orders:", orders);
+      // Calculate totals from invoices
+      if (invoicesResponse?.data?.data) {
+        const invoices = invoicesResponse.data.data;
+        const today = new Date();
+        // Filter invoices to only include today's
+        const todaysInvoices = invoices.filter(invoice => {
+          const invoiceDate = new Date(invoice.createdAt);
+          return invoiceDate.getFullYear() === today.getFullYear() &&
+                 invoiceDate.getMonth() === today.getMonth() &&
+                 invoiceDate.getDate() === today.getDate();
+        });
 
-    let totalMomo = 0;
-    let totalCash = 0;
+        let totalMomo = 0;
+        let totalCash = 0;
+        let totalCredit = 0;
+        let totalPartialCash = 0;
+        let totalPartialMomo = 0;
 
-    orders.forEach((order) => {
-      const totalAmount =
-        order?.items?.reduce((sum, item) => {
-          return sum + parseFloat(item.price) * parseFloat(item.quantity);
-        }, 0) || 0;
+        todaysInvoices.forEach((invoice) => {
+          const totalAmount = invoice.totalAmount || 0;
 
-      if (order.paymentMethod === "momo") {
-        totalMomo += totalAmount;
-      } else if (order.paymentMethod === "cash") {
-        totalCash += totalAmount;
-      } else if (order.paymentMethod === "momo/cash") {
-        totalMomo += parseFloat(order.momoAmount || 0);
-        totalCash += parseFloat(order.cashAmount || 0);
+          if (invoice.paymentMethod === "momo") {
+            totalMomo += totalAmount;
+          } else if (invoice.paymentMethod === "cash") {
+            totalCash += totalAmount;
+          } else if (invoice.paymentMethod === "credit") {
+            totalCredit += totalAmount;
+          } else if (invoice.paymentMethod === "momo/cash") {
+            totalMomo += parseFloat(invoice.momoAmount || 0);
+            totalCash += parseFloat(invoice.cashAmount || 0);
+          } else if (invoice.paymentType === "partial") {
+            if (invoice.momoAmount) totalPartialMomo += parseFloat(invoice.momoAmount);
+            if (invoice.cashAmount) totalPartialCash += parseFloat(invoice.cashAmount);
+          }
+        });
+
+        setMomoAmount(totalMomo);
+        setCashAmount(totalCash);
+        setPaymentTotals({
+          cash: totalCash,
+          momo: totalMomo,
+          credit: totalCredit,
+          partialCash: totalPartialCash,
+          partialMomo: totalPartialMomo
+        });
       }
-    });
-
-    setMomoAmount(totalMomo);
-    setCashAmount(totalCash);
-
-    console.log("Momo Total:", totalMomo);
-    console.log("Cash Total:", totalCash);
+    } catch (error) {
+      console.error("Error fetching data: ", error);
+    }
   };
 
   useEffect(() => {
@@ -84,7 +101,7 @@ const Orders = () => {
 
   useEffect(() => {
     if (filteredOrders.length > 0) {
-      calculatePaymentTotals(filteredOrders);
+      // We don't need to recalculate totals here anymore since it's based on invoices
     }
   }, [filteredOrders]);
 
@@ -117,7 +134,6 @@ const Orders = () => {
     setStartDate("");
     setEndDate("");
     applySearch(sortedOrders);
-    calculatePaymentTotals(sortedOrders);
   };
 
   // Filter orders by custom date range
@@ -139,7 +155,6 @@ const Orders = () => {
     setFilteredOrders(sortedOrders);
     setIsCustomDate(true);
     applySearch(sortedOrders);
-    calculatePaymentTotals(sortedOrders);
   };
 
   // Apply search filter
@@ -289,16 +304,18 @@ const Orders = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Get current orders
+  // Get current orders for pagination
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-  const currentOrders = filteredOrders.slice(
-    indexOfFirstOrder,
-    indexOfLastOrder
-  );
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
 
   // Change page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = (pageNumber) => {
+    // Ensure pageNumber is within valid range
+    const maxPage = Math.ceil(filteredOrders.length / ordersPerPage);
+    const validPageNumber = Math.max(1, Math.min(pageNumber, maxPage));
+    setCurrentPage(validPageNumber);
+  };
 
   const EditForm = () => {
     if (!editingOrder) return null;
@@ -457,204 +474,199 @@ const Orders = () => {
   };
 
   return (
-    <div className="table_container">
-      <div className="header-section border border-solid rounded-md border-gray-300 p-6">
-        <div className="title-section">
-          <h2 className="font-bold text-2xl mb-2">
-            {isCustomDate
-              ? "Custom Date Range Orders"
-              : "Recent Orders (Last 24 Hours)"}
-          </h2>
-          <div className="order-stats">
-            <div className="flex items-center flex-row justify-between">
-              <p className="text-lg">Total Orders:</p>
-              <p className="font-semibold">{filteredOrders.length}</p>
-            </div>
-            <div className="flex items-center flex-row justify-between">
-              <p className="text-lg p-1">Total Amount:</p>
-              <p className="font-semibold">
-                GHC
-                {filteredOrders
-                  .reduce((total, order) => {
-                    const orderTotal = order?.items?.reduce(
-                      (sum, item) =>
-                        sum + (item?.quantity || 0) * (item?.price || 0),
-                      0
-                    );
-                    return total + orderTotal;
-                  }, 0)
-                  .toFixed(2)}
-              </p>
-            </div>
-            <div className="flex items-center flex-row justify-between">
-              <p className="text-lg p-1">Payment Totals:</p>
-              <div className="flex flex-col">
-                <p className="font-semibold">
-                  Cash: GHC {cashAmount.toFixed(2)}
+    <div className="orders-container p-4">
+      <div className="summary-section bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="stats-card">
+            <h3 className="text-xl font-bold mb-4">Today's Sales Summary</h3>
+            <div className="flex flex-col space-y-2">
+              <div className="stat-item">
+                <p className="font-semibold text-gray-700">
+                  Cash: <span className="text-green-600">GHC {cashAmount.toFixed(2)}</span>
                 </p>
-                <p className="font-semibold">
-                  Momo: GHC {momoAmount.toFixed(2)}
+              </div>
+              <div className="stat-item">
+                <p className="font-semibold text-gray-700">
+                  Momo: <span className="text-blue-600">GHC {momoAmount.toFixed(2)}</span>
                 </p>
-                <p className="font-semibold">
-                  Credit: GHC {paymentTotals.credit.toFixed(2)}
+              </div>
+              <div className="stat-item">
+                <p className="font-semibold text-gray-700">
+                  Credit: <span className="text-red-600">GHC {paymentTotals.credit.toFixed(2)}</span>
                 </p>
-                <p className="font-semibold">
-                  Partial Cash: GHC {paymentTotals.partialCash.toFixed(2)}
+              </div>
+              <div className="stat-item">
+                <p className="font-semibold text-gray-700">
+                  Partial Cash: <span className="text-orange-600">GHC {paymentTotals.partialCash.toFixed(2)}</span>
                 </p>
-                <p className="font-semibold">
-                  Partial Momo: GHC {paymentTotals.partialMomo.toFixed(2)}
+              </div>
+              <div className="stat-item">
+                <p className="font-semibold text-gray-700">
+                  Partial Momo: <span className="text-purple-600">GHC {paymentTotals.partialMomo.toFixed(2)}</span>
+                </p>
+              </div>
+              <div className="stat-item mt-2 pt-2 border-t">
+                <p className="font-bold text-lg text-gray-800">
+                  Total: GHC {(cashAmount + momoAmount + paymentTotals.credit + paymentTotals.partialCash + paymentTotals.partialMomo).toFixed(2)}
                 </p>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="controls-section">
-          <div className="search-section">
-            <div className="search-container">
-              <input
-                type="text"
-                placeholder="Search orders..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="search-input"
-              />
-              <select
-                value={searchBy}
-                onChange={(e) => setSearchBy(e.target.value)}
-                className="search-select"
-              >
-                <option value="all">All</option>
-                <option value="invoice">Invoice Number</option>
-                <option value="name">Customer Name</option>
-              </select>
+          <div className="controls-section">
+            <div className="search-section mb-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Search orders..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="flex-grow px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={searchBy}
+                  onChange={(e) => setSearchBy(e.target.value)}
+                  className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All</option>
+                  <option value="invoice">Invoice Number</option>
+                  <option value="name">Customer Name</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="date-filter">
-            <button
-              onClick={() => filterOrdersByTimeWindow()}
-              className={`filter-btn ${!isCustomDate ? "active" : ""}`}
-            >
-              Last 24 Hours
-            </button>
-
-            <div className="flex items-center justify-center gap-4 p-4 ">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="date-input"
-              />
-              <span className="date-separator">to</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="date-input"
-              />
+            <div className="date-controls space-y-4">
               <button
-                onClick={filterOrdersByDateRange}
-                disabled={!startDate || !endDate}
-                className="filter-btn"
+                onClick={() => filterOrdersByTimeWindow()}
+                className={`w-full py-2 px-4 rounded-lg ${
+                  !isCustomDate 
+                    ? "bg-blue-600 text-white" 
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
               >
-                Filter
+                Last 24 Hours
               </button>
+
+              <div className="custom-date-range space-y-2">
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-500">to</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  onClick={filterOrdersByDateRange}
+                  disabled={!startDate || !endDate}
+                  className="w-full py-2 px-4 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Filter by Date
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-center gap-4 p-4 ">
+
             <button
               onClick={() => setSortByPayment(!sortByPayment)}
-              className={`filter-btn ${sortByPayment ? "active" : ""}`}
+              className={`w-full mt-4 py-2 px-4 rounded-lg ${
+                sortByPayment 
+                  ? "bg-purple-600 text-white" 
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
             >
-              Sort by Payment Method
+              {sortByPayment ? "Sorting by Payment Method" : "Sort by Payment Method"}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="orders-list mt-6">
-        <table className="w-full">
-          <thead>
-            <tr className="text-left">
-              <th className="px-4 py-2">Customer</th>
-              <th className="px-4 py-2">Items</th>
-              <th className="px-4 py-2">Payment Method</th>
-              <th className="px-4 py-2">Total</th>
-              <th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Invoice</th>
-              <th className="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentOrders.map((order) => (
-              <tr key={order._id} className="border-b">
-                <td className="px-4 py-2">{order.customerName}</td>
-                <td className="px-4 py-2">
-                  {order.items.map((item, index) => (
-                    <div key={index}>
-                      {item.description} - {item.quantity} x GHC{" "}
-                      {item.price.toFixed(2)}
-                    </div>
-                  ))}
-                </td>
-                <td className="px-4 py-2">
-                  <div>
-                    <div className="font-semibold">{order.paymentMethod}</div>
-                    {(order.paymentMethod === "momo/cash" ||
-                      order.paymentType === "partial") && (
-                      <div className="text-sm text-gray-600">
-                        {order.cashAmount > 0 && (
-                          <div>
-                            Cash: GHC {parseFloat(order.cashAmount).toFixed(2)}
-                          </div>
-                        )}
-                        {order.momoAmount > 0 && (
-                          <div>
-                            Momo: GHC {parseFloat(order.momoAmount).toFixed(2)}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-2">
-                  GHC{" "}
-                  {order.items
-                    .reduce((sum, item) => sum + item.quantity * item.price, 0)
-                    .toFixed(2)}
-                </td>
-                <td className="px-4 py-2">
-                  {new Date(order.createdAt).toLocaleString()}
-                </td>
-                <td className="px-4 py-2">{order.invoiceNumber}</td>
-                <td className="px-4 py-2">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(order)}
-                      className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(order._id)}
-                      className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
+      <div className="orders-list bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Items</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Payment Method</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Invoice</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {currentOrders.map((order) => (
+                <tr key={order._id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">{order.customerName}</td>
+                  <td className="px-4 py-3">
+                    <div className="space-y-1">
+                      {order.items.map((item, index) => (
+                        <div key={index} className="text-sm">
+                          {item.description} - {item.quantity} x GHC{" "}
+                          {item.price.toFixed(2)}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div>
+                      <div className="font-medium text-gray-900">{order.paymentMethod}</div>
+                      {(order.paymentMethod === "momo/cash" ||
+                        order.paymentType === "partial") && (
+                        <div className="mt-1 text-sm text-gray-600">
+                          {order.cashAmount > 0 && (
+                            <div>Cash: GHC {parseFloat(order.cashAmount).toFixed(2)}</div>
+                          )}
+                          {order.momoAmount > 0 && (
+                            <div>Momo: GHC {parseFloat(order.momoAmount).toFixed(2)}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    GHC {order.totalAmount ? order.totalAmount.toFixed(2) : 
+                         order.items.reduce((sum, item) => sum + item.quantity * item.price, 0).toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {new Date(order.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-sm">{order.invoiceNumber}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(order)}
+                        className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(order._id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination */}
-        <div className="pagination-container mt-4 flex justify-center items-center gap-2">
+        <div className="pagination-container p-4 flex justify-center items-center gap-2">
           <button
             onClick={() => paginate(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
@@ -665,9 +677,9 @@ const Orders = () => {
             <button
               key={index}
               onClick={() => paginate(index + 1)}
-              className={`px-3 py-1 rounded ${
+              className={`px-4 py-2 rounded-lg transition-colors ${
                 currentPage === index + 1
-                  ? "bg-blue-500 text-white"
+                  ? "bg-blue-600 text-white"
                   : "bg-gray-200 hover:bg-gray-300"
               }`}
             >
@@ -677,15 +689,14 @@ const Orders = () => {
 
           <button
             onClick={() => paginate(currentPage + 1)}
-            disabled={
-              currentPage === Math.ceil(filteredOrders.length / ordersPerPage)
-            }
-            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            disabled={currentPage === Math.ceil(filteredOrders.length / ordersPerPage)}
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
         </div>
       </div>
+
       {editingOrder && <EditForm />}
     </div>
   );
