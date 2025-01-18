@@ -14,6 +14,7 @@ const Analysis = () => {
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [products, setProducts] = useState([]);
   const [productsInventory, setProductsInventory] = useState([]);
+  const [invoiceTotal, setInvoiceTotal] = useState(0);
   const [topProducts, setTopProducts] = useState([]);
   const [timeFrameData, setTimeFrameData] = useState({
     labels: [],
@@ -28,10 +29,10 @@ const Analysis = () => {
       totalRevenue: 0,
       totalQuantity: 0,
       averageOrderValue: 0,
-      bestPerformingPeriod: '',
-      worstPerformingPeriod: '',
-      bestPerformingProduct: { name: '', revenue: 0, quantity: 0 }
-    }
+      bestPerformingPeriod: "",
+      worstPerformingPeriod: "",
+      bestPerformingProduct: { name: "", revenue: 0, quantity: 0 },
+    },
   });
 
   // Add 24-hour reset functionality
@@ -39,9 +40,12 @@ const Analysis = () => {
     // Function to check and reset sales data
     const checkAndResetSales = () => {
       const now = new Date();
-      const lastResetTime = localStorage.getItem('lastSalesResetTime');
-      
-      if (!lastResetTime || (now - new Date(lastResetTime)) >= 24 * 60 * 60 * 1000) {
+      const lastResetTime = localStorage.getItem("lastSalesResetTime");
+
+      if (
+        !lastResetTime ||
+        now - new Date(lastResetTime) >= 24 * 60 * 60 * 1000
+      ) {
         // Reset sales data
         setSalesData({});
         setTimeFrameData({
@@ -57,22 +61,26 @@ const Analysis = () => {
             totalRevenue: 0,
             totalQuantity: 0,
             averageOrderValue: 0,
-            bestPerformingPeriod: '',
-            worstPerformingPeriod: '',
-            bestPerformingProduct: { name: '', revenue: 0, quantity: 0 }
-          }
+            bestPerformingPeriod: "",
+            worstPerformingPeriod: "",
+            bestPerformingProduct: { name: "", revenue: 0, quantity: 0 },
+          },
         });
         setTopProducts([]);
-        
+
         // Update last reset time
-        localStorage.setItem('lastSalesResetTime', now.toISOString());
-        
+        localStorage.setItem("lastSalesResetTime", now.toISOString());
+
         // Fetch fresh data
         const fetchData = async () => {
           try {
             const [invoicesResponse, productsResponse] = await Promise.all([
-              axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/invoices"),
-              axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products")
+              axios.get(
+                "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+              ),
+              axios.get(
+                "https://temiperi-stocks-backend.onrender.com/temiperi/products"
+              ),
             ]);
 
             if (productsResponse?.data?.products) {
@@ -111,19 +119,21 @@ const Analysis = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/products");
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/products"
+        );
         if (response?.data?.products) {
           const products = response.data.products;
           setProductsInventory(products);
-          setProductPerformance(prev => ({
+          setProductPerformance((prev) => ({
             ...prev,
             summary: {
               ...prev.summary,
               totalQuantity: products.reduce((total, product) => {
                 const quantity = parseInt(product.quantity) || 0;
                 return total + quantity;
-              }, 0)
-            }
+              }, 0),
+            },
           }));
         }
       } catch (error) {
@@ -133,12 +143,36 @@ const Analysis = () => {
 
     fetchProducts();
   }, []); // Only run once on component mount
+  // function to get the invoices and update the invoices
 
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        );
+        if (response?.data?.data) {
+          const invoices = response.data.data;
+          const totalInvoiceAmount = invoices.reduce(
+            (total, invoice) => total + invoice.totalAmount,
+            0
+          );
+          setInvoiceTotal(totalInvoiceAmount);
+        }
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+      }
+    };
+
+    fetchInvoices();
+  }, []);
   // Separate useEffect for invoices and other data
   useEffect(() => {
     const fetchInvoicesData = async () => {
       try {
-        const response = await axios.get("https://temiperi-stocks-backend.onrender.com/temiperi/invoices");
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        );
         if (response?.data?.data) {
           const invoices = response.data.data;
           processOrdersData(invoices);
@@ -160,18 +194,18 @@ const Analysis = () => {
   const processProductPerformance = (invoices) => {
     // Extract unique products
     const uniqueProducts = new Set();
-    invoices.forEach(invoice => {
-      invoice.items.forEach(item => uniqueProducts.add(item.description));
+    invoices.forEach((invoice) => {
+      invoice.items.forEach((item) => uniqueProducts.add(item.description));
     });
     setProducts(Array.from(uniqueProducts));
 
     // Filter invoices based on selected time frame
-    const filteredInvoices = invoices.filter(invoice => {
+    const filteredInvoices = invoices.filter((invoice) => {
       const invoiceDate = new Date(invoice.createdAt);
       const invoiceYear = invoiceDate.getFullYear();
       const invoiceMonth = invoiceDate.getMonth();
 
-      if (selectedTimeFrame === 'monthly') {
+      if (selectedTimeFrame === "monthly") {
         return invoiceYear === selectedYear;
       } else {
         return invoiceYear === selectedYear && invoiceMonth === selectedMonth;
@@ -182,27 +216,35 @@ const Analysis = () => {
     const timeFrameData = new Map();
     const productData = new Map();
 
-    filteredInvoices.forEach(invoice => {
+    filteredInvoices.forEach((invoice) => {
       const invoiceDate = new Date(invoice.createdAt);
-      let timeKey = '';
+      let timeKey = "";
 
       switch (selectedTimeFrame) {
-        case 'monthly':
+        case "monthly":
           timeKey = invoiceDate.getMonth();
           break;
-        case 'weekly':
-          const weekNum = Math.ceil((invoiceDate.getDate() + 
-            new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), 1).getDay()) / 7);
+        case "weekly":
+          const weekNum = Math.ceil(
+            (invoiceDate.getDate() +
+              new Date(
+                invoiceDate.getFullYear(),
+                invoiceDate.getMonth(),
+                1
+              ).getDay()) /
+              7
+          );
           timeKey = `Week ${weekNum}`;
           break;
-        case 'daily':
+        case "daily":
           timeKey = invoiceDate.getDate();
           break;
       }
 
-      invoice.items.forEach(item => {
-        if (selectedProduct === 'all' || selectedProduct === item.description) {
-          const amount = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+      invoice.items.forEach((item) => {
+        if (selectedProduct === "all" || selectedProduct === item.description) {
+          const amount =
+            (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
           const quantity = parseFloat(item.quantity) || 0;
 
           if (!timeFrameData.has(timeKey)) {
@@ -214,7 +256,11 @@ const Analysis = () => {
           timeData.orders += 1;
 
           if (!productData.has(item.description)) {
-            productData.set(item.description, { revenue: 0, quantity: 0, orders: 0 });
+            productData.set(item.description, {
+              revenue: 0,
+              quantity: 0,
+              orders: 0,
+            });
           }
           const prodData = productData.get(item.description);
           prodData.revenue += amount;
@@ -227,25 +273,27 @@ const Analysis = () => {
     // Find best performing product based on revenue
     let bestProduct = { name: "", revenue: 0, quantity: 0 };
     productData.forEach((data, name) => {
-      console.log("Checking product:", name, "with revenue:", data.revenue); // Debug log
       if (data.revenue > bestProduct.revenue) {
         bestProduct = {
           name: name,
           revenue: data.revenue,
-          quantity: data.quantity
+          quantity: data.quantity,
         };
       }
     });
-    console.log("Best product found:", bestProduct); // Debug log
 
     // Prepare performance summary
-    const totalRevenue = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.revenue, 0);
-    
-    const totalOrders = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.orders, 0);
-    
-    setProductPerformance(prev => ({
+    const totalRevenue = Array.from(productData.values()).reduce(
+      (sum, data) => sum + data.revenue,
+      0
+    );
+
+    const totalOrders = Array.from(productData.values()).reduce(
+      (sum, data) => sum + data.orders,
+      0
+    );
+
+    setProductPerformance((prev) => ({
       ...prev,
       summary: {
         ...prev.summary,
@@ -253,13 +301,13 @@ const Analysis = () => {
         averageOrderValue: totalOrders ? totalRevenue / totalOrders : 0,
         bestPerformingPeriod: getBestPerformingPeriod(timeFrameData),
         worstPerformingPeriod: getWorstPerformingPeriod(timeFrameData),
-        bestPerformingProduct: bestProduct
-      }
+        bestPerformingProduct: bestProduct,
+      },
     }));
   };
 
   const getBestPerformingPeriod = (timeFrameData) => {
-    let bestPeriod = '';
+    let bestPeriod = "";
     let maxRevenue = -1;
     timeFrameData.forEach((data, period) => {
       if (data.revenue > maxRevenue) {
@@ -271,7 +319,7 @@ const Analysis = () => {
   };
 
   const getWorstPerformingPeriod = (timeFrameData) => {
-    let worstPeriod = '';
+    let worstPeriod = "";
     let minRevenue = Infinity;
     timeFrameData.forEach((data, period) => {
       if (data.revenue < minRevenue && data.revenue > 0) {
@@ -283,9 +331,21 @@ const Analysis = () => {
   };
 
   const formatPeriod = (period) => {
-    if (selectedTimeFrame === 'monthly') {
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                         'July', 'August', 'September', 'October', 'November', 'December'];
+    if (selectedTimeFrame === "monthly") {
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
       return monthNames[period];
     }
     return period.toString();
@@ -298,12 +358,13 @@ const Analysis = () => {
 
     invoices.forEach((invoice) => {
       const invoiceDate = new Date(invoice.createdAt);
-      
+
       // Only process invoices from today
-      if (invoiceDate.getFullYear() === today.getFullYear() &&
-          invoiceDate.getMonth() === today.getMonth() &&
-          invoiceDate.getDate() === today.getDate()) {
-            
+      if (
+        invoiceDate.getFullYear() === today.getFullYear() &&
+        invoiceDate.getMonth() === today.getMonth() &&
+        invoiceDate.getDate() === today.getDate()
+      ) {
         const month = invoiceDate.getMonth();
         const invoiceTotal = invoice.items.reduce((total, item) => {
           const price = parseFloat(item.price) || 0;
@@ -324,26 +385,28 @@ const Analysis = () => {
 
     invoices.forEach((invoice) => {
       const invoiceDate = new Date(invoice.createdAt);
-      
-      // Only process invoices from today
-      if (invoiceDate.getFullYear() === today.getFullYear() &&
-          invoiceDate.getMonth() === today.getMonth() &&
-          invoiceDate.getDate() === today.getDate()) {
 
+      // Only process invoices from today
+      if (
+        invoiceDate.getFullYear() === today.getFullYear() &&
+        invoiceDate.getMonth() === today.getMonth() &&
+        invoiceDate.getDate() === today.getDate()
+      ) {
         if (!invoice.items || !Array.isArray(invoice.items)) {
           console.log("Invalid invoice:", invoice);
           return;
         }
 
         invoice.items.forEach((item) => {
-          const productName = item.product?.name || item.productName || item.name;
+          const productName =
+            item.product?.name || item.productName || item.name;
 
           if (!productName) {
-            console.log("No product name found in item:", item);
             return;
           }
 
-          const price = parseFloat(item.price) || parseFloat(item.product?.price) || 0;
+          const price =
+            parseFloat(item.price) || parseFloat(item.product?.price) || 0;
           const quantity = parseFloat(item.quantity) || 0;
           const itemTotal = price * quantity;
 
@@ -378,11 +441,13 @@ const Analysis = () => {
     const today = new Date();
     const filteredInvoices = invoices.filter((invoice) => {
       const invoiceDate = new Date(invoice.createdAt);
-      
+
       // Only process invoices from today
-      return invoiceDate.getFullYear() === today.getFullYear() &&
-             invoiceDate.getMonth() === today.getMonth() &&
-             invoiceDate.getDate() === today.getDate();
+      return (
+        invoiceDate.getFullYear() === today.getFullYear() &&
+        invoiceDate.getMonth() === today.getMonth() &&
+        invoiceDate.getDate() === today.getDate()
+      );
     });
 
     let timeFrameMap = new Map();
@@ -391,19 +456,26 @@ const Analysis = () => {
 
     filteredInvoices.forEach((invoice) => {
       const invoiceDate = new Date(invoice.createdAt);
-      let key = '';
+      let key = "";
 
       switch (selectedTimeFrame) {
-        case 'monthly':
+        case "monthly":
           key = invoiceDate.getMonth(); // 0-11
           break;
-        case 'weekly':
+        case "weekly":
           // Get week number within the month
-          const weekNum = Math.ceil((invoiceDate.getDate() + 
-            new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), 1).getDay()) / 7);
+          const weekNum = Math.ceil(
+            (invoiceDate.getDate() +
+              new Date(
+                invoiceDate.getFullYear(),
+                invoiceDate.getMonth(),
+                1
+              ).getDay()) /
+              7
+          );
           key = `Week ${weekNum}`;
           break;
-        case 'daily':
+        case "daily":
           key = invoiceDate.getDate(); // 1-31
           break;
       }
@@ -567,7 +639,7 @@ const Analysis = () => {
             <div className="bg-blue-50 p-4 rounded-lg">
               <p className="text-sm text-blue-600">Total Revenue</p>
               <h4 className="text-xl font-bold text-blue-900 mt-1">
-                GH₵{productPerformance.summary.totalRevenue.toFixed(2)}
+                GH₵{invoiceTotal.toFixed(2)}
               </h4>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
@@ -597,7 +669,10 @@ const Analysis = () => {
                 {productPerformance.summary.bestPerformingProduct.name}
               </h4>
               <p className="text-sm text-indigo-600 mt-1">
-                GH₵{productPerformance.summary.bestPerformingProduct.revenue.toFixed(2)}
+                GH₵
+                {productPerformance.summary.bestPerformingProduct.revenue.toFixed(
+                  2
+                )}
               </p>
             </div>
           </div>
@@ -730,7 +805,9 @@ const Analysis = () => {
 
         {/* Top Products Table */}
         <div className="bg-white p-6 rounded-xl shadow-sm">
-          <h2 className="text-xl font-semibold mb-6">Top Performing Products</h2>
+          <h2 className="text-xl font-semibold mb-6">
+            Top Performing Products
+          </h2>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -768,7 +845,9 @@ const Analysis = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.orders}</div>
+                      <div className="text-sm text-gray-900">
+                        {product.orders}
+                      </div>
                     </td>
                   </tr>
                 ))}
