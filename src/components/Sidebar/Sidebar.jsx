@@ -1,96 +1,59 @@
-import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
-import {
-  RiDashboardLine,
-  RiProductHuntLine,
-  RiFileList3Line,
-} from "react-icons/ri";
-import { BsGraphUp, BsGear } from "react-icons/bs";
-import { MdOutlineAddBox, MdOutlineDescription } from "react-icons/md";
-import { HiMenuAlt2 } from "react-icons/hi";
+// import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import Logo from '../../assets/temiperi-logo.jpg';
+import { IoMdClose, IoMdMenu } from 'react-icons/io';
+import { GoChecklist } from "react-icons/go";
+import { IoSettings } from 'react-icons/io5';
+import { TbReport } from "react-icons/tb";
 
-export const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(window.innerWidth > 768);
+export const Sidebar = ({ onClose }) => {
+    const location = useLocation();
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsOpen(window.innerWidth > 768);
-    };
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString("en-US", {
+        year: "numeric"
+    });
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    const getLinkClass = (path) =>
+        location.pathname === path
+            ? 'bg-white text-blue w-full py-2 text-center rounded-md flex px-4 items-center gap-2'
+            : 'text-white w-full text-center hover:bg-white/10 py-2 rounded-md transition-colors flex px-4 items-center gap-2';
 
-  const menuItems = [
-    { icon: <RiDashboardLine size={20} />, text: "Dashboard", path: "/" },
-    {
-      icon: <RiProductHuntLine size={20} />,
-      text: "Products",
-      path: "/product",
-    },
-    { icon: <BsGraphUp size={20} />, text: "Analysis", path: "/analysis" },
-    {
-      icon: <MdOutlineAddBox size={20} />,
-      text: "Add Products",
-      path: "/addproduct",
-    },
-    {
-      icon: <RiFileList3Line size={20} />,
-      text: "Write Report",
-      path: "/report",
-    },
-    {
-      icon: <MdOutlineDescription size={20} />,
-      text: "View Reports",
-      path: "/get-report",
-    },
-    { icon: <BsGear size={20} />, text: "Settings", path: "/settings" },
-  ];
-
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-    document
-      .querySelector(".content-container")
-      .classList.toggle("sidebar-active");
-  };
-
-  return (
-    <>
-      <button
-        className={`sidebar-toggle ${isOpen ? "active" : ""}`}
-        onClick={toggleSidebar}
-        aria-label="Toggle Sidebar"
-      >
-        <HiMenuAlt2 size={24} />
-      </button>
-      <div
-        className={`sidebar w-64 min-h-screen bg-blue-900 text-gray-300 py-6 px-4 ${
-          isOpen ? "active" : ""
-        }`}
-      >
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white px-4">Temiperi</h1>
-        </div>
-
-        <nav className="space-y-1">
-          {menuItems.map((item, index) => (
-            <NavLink
-              key={index}
-              to={item.path}
-              className={({ isActive }) =>
-                `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-blue-800 text-white"
-                    : "hover:bg-blue-800/70 hover:text-white"
-                }`
-              }
+    return (
+        <div className='w-[280px] lg:w-64 h-full flex flex-col px-4 lg:px-6 py-6 lg:py-10 items-center bg-blue gap-8'>
+            {/* Close button for mobile */}
+            <button 
+                onClick={onClose}
+                className='lg:hidden self-end p-2 text-white hover:bg-white/10 rounded-full'
             >
-              <span className="text-current">{item.icon}</span>
-              <span className="font-medium">{item.text}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </div>
-    </>
-  );
+                <IoMdClose className='text-2xl' />
+            </button>
+
+            {/* Logo */}
+            <img src={Logo} alt="Temiperi Logo" className='w-16 h-16 lg:w-20 lg:h-20 rounded-full' />
+            
+            {/* Navigation Links */}
+            <div className="flex flex-col gap-3 items-center font-medium text-base lg:text-lg w-full">
+                <Link to="/" className='w-full' onClick={onClose}>
+                    <p className={getLinkClass('/')}><IoMdMenu className="text-2xl"/> Stocks</p>
+                </Link>
+                <Link to="/orders" className='w-full' onClick={onClose}>
+                    <p className={getLinkClass('/orders')}><GoChecklist className="text-2xl"/> Orders</p>
+                </Link>
+                <Link to="/report" className='w-full' onClick={onClose}>
+                    <p className={getLinkClass('/report')}><TbReport className="text-2xl"/> Report</p>
+                </Link>
+                <Link to="/settings" className='w-full' onClick={onClose}>
+                    <p className={getLinkClass('/settings')}><IoSettings className="text-2xl"/> Settings</p>
+                </Link>
+            </div>
+
+            {/* Company Info */}
+            <div className="mt-auto text-center text-white">
+                <p className="text-sm opacity-80"> {formattedDate} | Temiperi Enterprise</p>
+            </div>
+        </div>
+    );
 };
+
+

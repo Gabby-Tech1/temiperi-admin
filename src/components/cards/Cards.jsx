@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Bar, Line, Doughnut } from "react-chartjs-2";
-import { Chart as ChartJS } from "chart.js/auto";
 import axios from "axios";
+import card from '../../assets/card-icon.png'
+import arrow from '../../assets/arrow.png'
 import { MdTrendingUp, MdTrendingDown } from "react-icons/md";
 import { BsArrowUpRight, BsArrowDownRight } from "react-icons/bs";
 
-const Analysis = () => {
+const Cards = () => {
   const [salesData, setSalesData] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -383,244 +383,123 @@ const Analysis = () => {
   };
 
   return (
-    <div className="p-0 min-h-screen">
-      <div className="max-w-[1800px] mx-auto space-y-6">
-        {/* Product Performance Section */}
-        <div className="p-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Product Performance</h2>
-            <div className="flex items-center space-x-4">
-              <select
-                value={selectedProduct}
-                onChange={(e) => setSelectedProduct(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Products</option>
-                {products.map((product, index) => (
-                  <option key={index} value={product}>
-                    {product}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col gap-5 w-full">
-          <div className="">
-          {/* Time Frame Controls */}
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">Sales Analysis</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={selectedTimeFrame}
-                    onChange={(e) => setSelectedTimeFrame(e.target.value)}
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="daily">Daily</option>
-                  </select>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {[...Array(5)].map((_, i) => (
-                      <option key={i} value={new Date().getFullYear() - i}>
-                        {new Date().getFullYear() - i}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedTimeFrame !== "monthly" && (
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                      className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {[
-                        "January",
-                        "February",
-                        "March",
-                        "April",
-                        "May",
-                        "June",
-                        "July",
-                        "August",
-                        "September",
-                        "October",
-                        "November",
-                        "December",
-                      ].map((month, index) => (
-                        <option key={index} value={index}>
-                          {month}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-4 rounded-lg h-[400px] relative">
-                  <Bar
-                    data={{
-                      labels: timeFrameData.labels,
-                      datasets: [
-                        {
-                          label: "Sales",
-                          data: timeFrameData.values,
-                          backgroundColor: "rgba(59, 130, 246, 0.5)",
-                          borderColor: "rgb(59, 130, 246)",
-                          borderWidth: 1,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: false,
-                        },
-                        title: {
-                          display: true,
-                          text: "Sales Distribution",
-                        },
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            callback: (value) => `GH₵${value}`,
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </div>
-                <div className="bg-white p-4 rounded-lg">
-                  <Line
-                    data={{
-                      labels: timeFrameData.labels,
-                      datasets: [
-                        {
-                          label: "Sales Trend",
-                          data: timeFrameData.values,
-                          borderColor: "rgb(34, 197, 94)",
-                          tension: 0.4,
-                          fill: true,
-                          backgroundColor: "rgba(34, 197, 94, 0.1)",
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      plugins: {
-                        legend: {
-                          display: false,
-                        },
-                        title: {
-                          display: true,
-                          text: "Sales Trend",
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Top Products Table */}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-blue-600">Total Revenue</p>
-                <h4 className="text-xl font-bold text-blue-900 mt-1">
-                  GH₵{productPerformance.summary.totalRevenue.toFixed(2)}
-                </h4>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <p className="text-sm text-green-600">Total Quantity</p>
-                <h4 className="text-xl font-bold text-green-900 mt-1">
-                  {productPerformance.summary.totalQuantity}
-                </h4>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <p className="text-sm text-purple-600">Average Order Value</p>
-                <h4 className="text-xl font-bold text-purple-900 mt-1">
-                  GH₵{productPerformance.summary.averageOrderValue.toFixed(2)}
-                </h4>
-              </div>
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <p className="text-sm text-yellow-600">Best Period</p>
-                <h4 className="text-xl font-bold text-yellow-900 mt-1">
-                  {productPerformance.summary.bestPerformingPeriod}
-                </h4>
-              </div>
-              <div className="bg-indigo-50 p-4 rounded-lg">
-                <p className="text-sm text-indigo-600">Best Product</p>
-                <h4 className="text-xl font-bold text-indigo-900 mt-1">
-                  {productPerformance.summary.bestPerformingProduct.name}
-                </h4>
-                <p className="text-sm text-indigo-600 mt-1">
-                  GH₵{productPerformance.summary.bestPerformingProduct.revenue.toFixed(2)}
+    <div>
+        <div className="flex items-center flex-end w-[70%] gap-6 justify-end">
+          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Sales</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.total.toFixed(2)}
+                </h3>
+                <p className="text-sm text-green-600 flex items-center mt-2">
+                  <BsArrowUpRight className="mr-1" />
+                  +2.5% from last period
                 </p>
               </div>
-            </div>
-          </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-semibold mb-6">Top Performing Products</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Product
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Sales
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Quantity Sold
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Orders
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {topProducts.map((product, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {product.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            GH₵{product.totalAmount.toFixed(2)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {product.totalQuantity}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{product.orders}</div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
+                <MdTrendingUp className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+          </div> */}
+          <div className="border-2 rounded-md p-2 w-full">
+            <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-semibold">GH₵{timeFrameData.total.toFixed(2)}</h3>
+                <p>Total Stock</p>
+            </div>
+            <hr />
+            <div className="flex items-center justify-between mt-6">
+                <div className="flex items-center gap-2">
+                    <img src={card} alt="card" className='w-12 h-12' />
+                    <div className="">
+                        <p className="text-xs font-semibold text-gray-500 mt-4">Total Stocks Available</p>
+                        <p>{productPerformance.summary.totalQuantity}</p>
+                    </div>
+                </div>
+                <div className="flex items-center">
+                    <img src={arrow} alt="arrow" className="w-8 h-8"/>
+                    <p className="text-gary-500 text-sm">Last 24 hours</p>
+                </div>
+            </div>
+          </div>
+          <div className="border-2 rounded-md p-2 w-full">
+            <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-semibold">GH₵{timeFrameData.total.toFixed(2)}</h3>
+                <p>Total Stock</p>
+            </div>
+            <hr />
+            <div className="flex items-center justify-between mt-6">
+                <div className="flex items-center gap-2">
+                    <img src={card} alt="card" className='w-12 h-12' />
+                    <div className="">
+                        <p className="text-xs font-semibold text-gray-500 mt-4">Total Stocks Available</p>
+                        <p>{productPerformance.summary.totalQuantity}</p>
+                    </div>
+                </div>
+                <div className="flex items-center">
+                    <img src={arrow} alt="arrow" className="w-8 h-8"/>
+                    <p className="text-gary-500 text-sm">Last 24 hours</p>
+                </div>
+            </div>
+          </div>
+          
 
-export default Analysis;
+          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Average Sale</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.average.toFixed(2)}
+                </h3>
+                <p className="text-sm text-red-600 flex items-center mt-2">
+                  <BsArrowDownRight className="mr-1" />
+                  -0.8% from last period
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+                <MdTrendingDown className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div> */}
+
+          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Highest Sale</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.highest.toFixed(2)}
+                </h3>
+                <p className="text-sm text-green-600 flex items-center mt-2">
+                  <BsArrowUpRight className="mr-1" />
+                  Peak performance
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center">
+                <MdTrendingUp className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div> */}
+
+          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Lowest Sale</p>
+                <h3 className="text-2xl font-bold mt-1">
+                  GH₵{timeFrameData.lowest.toFixed(2)}
+                </h3>
+                <p className="text-sm text-yellow-600 flex items-center mt-2">
+                  <MdTrendingDown className="mr-1" />
+                  Room for improvement
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
+                <MdTrendingDown className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </div> */}
+        </div>
+    </div>
+  )
+}
+
+export default Cards

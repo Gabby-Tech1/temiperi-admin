@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '../Sidebar/Sidebar';
+// import { Sidebar } from '../Sidebar/Sidebar';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import axios from 'axios';
 import './summary.css';
@@ -282,10 +282,10 @@ const Summary = () => {
 
   return (
     <div className="summary-container">
-      <Sidebar />
+      {/* <Sidebar /> */}
       
       <div className="summary-content">
-        <h2>Product Performance Summary</h2>
+        {/* <h2>Product Performance Summary</h2> */}
 
         <div className="controls-section">
           <div className="time-controls">
@@ -340,7 +340,7 @@ const Summary = () => {
           <div className="loading">Loading performance data...</div>
         ) : (
           <>
-            <div className="summary-stats">
+            <div className="grid grid-cols-5 gap-4">
               <div className="stat-card">
                 <h3>Total Revenue</h3>
                 <p>GH₵ {productPerformance.summary.totalRevenue.toLocaleString(undefined, {

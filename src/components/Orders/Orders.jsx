@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./order.css";
 import axios from "axios";
 import { useOrderContext } from "../../context/OrderContext";
+import OrderCard from "../cards/OrderCard";
 
 const Orders = () => {
   const [orderList, setOrderList] = useState([]);
@@ -458,7 +459,7 @@ const Orders = () => {
 
   return (
     <div className="table_container">
-      <div className="header-section border border-solid rounded-md border-gray-300 p-6">
+      {/* <div className="header-section border border-solid rounded-md border-gray-300 p-6">
         <div className="title-section">
           <h2 className="font-bold text-2xl mb-2">
             {isCustomDate
@@ -508,10 +509,57 @@ const Orders = () => {
             </div>
           </div>
         </div>
-
-        <div className="controls-section">
+      </div> */}
+      {/* <OrderCard /> */}
+      {/* <div className="controls-section">
           <div className="search-section">
-            <div className="search-container">
+            
+          </div>
+
+          <div className="date-filter">
+            <button
+              onClick={() => filterOrdersByTimeWindow()}
+              className={`filter-btn ${!isCustomDate ? "active" : ""}`}
+            >
+              Last 24 Hours
+            </button>
+
+            
+          </div>
+          <div className="flex items-center justify-center gap-4 p-4 ">
+            <button
+              onClick={() => setSortByPayment(!sortByPayment)}
+              className={`filter-btn ${sortByPayment ? "active" : ""}`}
+            >
+              Sort by Payment Method
+            </button>
+          </div>
+        </div> */}
+
+      <div className="flex items-center justify-between mb-4 p-4 -mt-10">
+          <div className="flex items-center justify-center gap-4 p-2 ">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="date-input"
+              />
+              {/* <span className="date-separator">to</span> */}
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="date-input"
+              />
+              <button
+                onClick={filterOrdersByDateRange}
+                disabled={!startDate || !endDate}
+                className="filter-btn"
+              >
+                Filter
+              </button>
+          </div>
+          <div className="flex items-center gap-4">
               <input
                 type="text"
                 placeholder="Search orders..."
@@ -529,48 +577,6 @@ const Orders = () => {
                 <option value="name">Customer Name</option>
               </select>
             </div>
-          </div>
-
-          <div className="date-filter">
-            <button
-              onClick={() => filterOrdersByTimeWindow()}
-              className={`filter-btn ${!isCustomDate ? "active" : ""}`}
-            >
-              Last 24 Hours
-            </button>
-
-            <div className="flex items-center justify-center gap-4 p-4 ">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="date-input"
-              />
-              <span className="date-separator">to</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="date-input"
-              />
-              <button
-                onClick={filterOrdersByDateRange}
-                disabled={!startDate || !endDate}
-                className="filter-btn"
-              >
-                Filter
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center justify-center gap-4 p-4 ">
-            <button
-              onClick={() => setSortByPayment(!sortByPayment)}
-              className={`filter-btn ${sortByPayment ? "active" : ""}`}
-            >
-              Sort by Payment Method
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="orders-list mt-6">
@@ -578,7 +584,7 @@ const Orders = () => {
           <thead>
             <tr className="text-left">
               <th className="px-4 py-2">Customer</th>
-              <th className="px-4 py-2">Items</th>
+              {/* <th className="px-4 py-2">Items</th> */}
               <th className="px-4 py-2">Payment Method</th>
               <th className="px-4 py-2">Total</th>
               <th className="px-4 py-2">Date</th>
@@ -590,14 +596,14 @@ const Orders = () => {
             {currentOrders.map((order) => (
               <tr key={order._id} className="border-b">
                 <td className="px-4 py-2">{order.customerName}</td>
-                <td className="px-4 py-2">
+                {/* <td className="px-4 py-2">
                   {order.items.map((item, index) => (
                     <div key={index}>
                       {item.description} - {item.quantity} x GHC{" "}
                       {item.price.toFixed(2)}
                     </div>
                   ))}
-                </td>
+                </td> */}
                 <td className="px-4 py-2">
                   <div>
                     <div className="font-semibold">{order.paymentMethod}</div>

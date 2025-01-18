@@ -13,24 +13,24 @@
   font-family: "Montserrat", sans-serif;
 }
 
-body {
+/* body {
   min-height: 100vh;
   background-color: white;
-}
+} */
 
 html {
   scroll-behavior: smooth;
 }
-
+/* 
 ::-webkit-scrollbar {
   display: none;
-}
+} */
 
-p {
+/* p { */
   /* font-family: "Itim", cursive; */
-  font-weight: 400;
-}
-
+  /* font-weight: 400;
+} */
+/* 
 button {
   width: 100%;
   padding: 12px;
@@ -38,4 +38,4 @@ button {
   color: white;
   border: none;
   margin-top: 10px;
-}
+} */

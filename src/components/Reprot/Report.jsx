@@ -61,7 +61,7 @@ const Report = () => {
 
   return (
     <div className="report_container">
-      <div className="recent_reports">
+      {/* <div className="recent_reports">
         <h3>Recent Reports</h3>
         {loading ? (
           <p>Loading...</p>
@@ -76,20 +76,25 @@ const Report = () => {
             </div>
           ))
         )}
-      </div>
+      </div> */}
 
       <div className="report_body">
-        <h2>Write Your Report</h2>
-        <input
-          type="text"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+        <div>
+          <label htmlFor="" className="">Title</label>
+          <input
+            type="text"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="border border-black w-full p-2"
+          />
+        </div>
+        <label htmlFor="" className="">Report</label>
         <textarea
           placeholder="write here"
           value={content}
           onChange={(e) => setContent(e.target.value)}
+          className="border border-black"
         />
         <div className="btns">
           <button onClick={handleSubmit}>Save</button>

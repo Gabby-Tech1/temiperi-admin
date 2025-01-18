@@ -1,12 +1,11 @@
 .summary-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f8f9fa;
 }
 
 .summary-content {
   flex: 1;
-  padding: 2rem;
+  /* padding: 2rem; */
 }
 
 .summary-content h2 {
@@ -17,9 +16,10 @@
 
 .controls-section {
   background: white;
-  padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 2rem;
 }
 
@@ -44,12 +44,12 @@
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
-.summary-stats {
+/* .summary-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
-}
+} */
 
 .stat-card {
   background: white;
@@ -75,6 +75,7 @@
 
 .chart-section {
   background: white;
+  width: 100%;
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

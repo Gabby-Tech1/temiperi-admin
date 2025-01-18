@@ -126,76 +126,98 @@ const AddProduct = () => {
       <ToastContainer />
       {/* <Header /> */}
       <div>
-        {/* <Orders url={baseUrl} /> */}
+        <div className="p-4">
+          
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+              <div className="flex gap-2 flex-col">
+                <label className="block text-sm font-medium text-gray-700 ">
+                  Category
+                </label>
+                <select
+                  name="category"
+                  value={productData.category}
+                  onChange={handleInputChange}
+                  disabled={existingProduct}
+                  className="w-full px-3 py-2 border border-gray-500 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                >
+                  <option value="">Select Category</option>
+                  <option value="ABL">ABL</option>
+                  <option value="Water">Water</option>
+                  <option value="Pet Drinks">Pet Drinks</option>
+                  <option value="Guinness">Guinness</option>
+                </select>
+              </div>
 
-        <h2>Add New Products</h2>
-        <p>Please enter the product details in the table below</p>
-        <div className="addproduct_container">
-          <form className="addproduct" onSubmit={handleSubmit}>
-            <label>
-              Category
-              <select
-                name="category"
-                value={productData.category}
-                onChange={handleInputChange}
-                disabled={existingProduct}
-              >
-                <option value="">Select Category</option>
-                <option value="ABL">ABL</option>
-                <option value="Water">Water</option>
-                <option value="Pet Drinks">Pet Drinks</option>
-                <option value="Guinness">Guinness</option>
-              </select>
-            </label>
-            <label>
-              Product Name
-              <input
-                type="text"
-                name="name"
-                placeholder="Alvaro"
-                value={productData.name}
-                onChange={handleInputChange}
-                disabled={existingProduct}
-              />
-            </label>
-            <label>
-              Retail Price
-              <input
-                type="number"
-                name="retail_price"
-                placeholder="Retail Price"
-                value={productData.price.retail_price}
-                onChange={handleInputChange}
-                disabled={existingProduct}
-              />
-            </label>
-            <label>
-              Wholesale Price
-              <input
-                type="number"
-                name="whole_sale_price"
-                placeholder="Wholesale Price"
-                value={productData.price.whole_sale_price}
-                onChange={handleInputChange}
-                disabled={existingProduct}
-              />
-            </label>
-            <label>
-              Quantity
-              <input
-                type="number"
-                name="quantity"
-                placeholder="Quantity"
-                value={productData.quantity}
-                onChange={handleInputChange}
-              />
-            </label>
-            <div className="btn">
-              <button type="submit">
-                {existingProduct ? "Update Quantity" : "Add Product"}
-              </button>
-            </div>
-          </form>
+              <div className="">
+                <label className="block text-sm font-medium text-gray-700 ">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Enter product name"
+                  value={productData.name}
+                  onChange={handleInputChange}
+                  disabled={existingProduct}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                />
+              </div>
+
+              <div className="">
+                <label className="block text-sm font-medium text-gray-700 ">
+                  Retail Price (GH₵)
+                </label>
+                <input
+                  type="number"
+                  name="retail_price"
+                  placeholder="0.00"
+                  value={productData.price.retail_price}
+                  onChange={handleInputChange}
+                  disabled={existingProduct}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                />
+              </div>
+
+              <div className="">
+                <label className="block text-sm font-medium text-gray-700 ">
+                  Wholesale Price (GH₵)
+                </label>
+                <input
+                  type="number"
+                  name="whole_sale_price"
+                  placeholder="0.00"
+                  value={productData.price.whole_sale_price}
+                  onChange={handleInputChange}
+                  disabled={existingProduct}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                />
+              </div>
+
+              <div className="">
+                <label className="block text-sm font-medium text-gray-700 ">
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  name="quantity"
+                  placeholder="Enter quantity"
+                  value={productData.quantity}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="w-full px-4 py-2 bg-blue text-white rounded-md hover:bg-opacity-90 transition-colors"
+                >
+                  {existingProduct ? "Update Quantity" : "Add Product"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
         {/* Display Recently Added Products */}
