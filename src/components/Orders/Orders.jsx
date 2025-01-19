@@ -17,6 +17,7 @@ const Orders = () => {
   const [momoAmount, setMomoAmount] = useState(0);
   const [cashAmount, setCashAmount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [invoices, setInvoices] = useState([]);
   const [ordersPerPage] = useState(10);
   const [paymentTotals, setPaymentTotals] = useState({
     cash: 0,
@@ -25,58 +26,83 @@ const Orders = () => {
     partialCash: 0,
     partialMomo: 0,
   });
+
   const { refreshTrigger, triggerRefresh } = useOrderContext();
 
   // Fetch orders from API
   const fetchOrders = async () => {
     try {
-      const response = await axios.get(
-        "https://temiperi-stocks-backend.onrender.com/temiperi/orders"
-      );
-      if (response?.data) {
-        const allOrders = response?.data?.data || [];
+      const [ordersResponse, invoicesResponse] = await Promise.all([
+        axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/orders"
+        ),
+        axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        ),
+      ]);
+
+      if (ordersResponse?.data) {
+        const allOrders = invoicesResponse?.data?.data || [];
         setOrderList(allOrders);
-        console.log("Fetched orders:", allOrders);
-        // Calculate totals immediately after fetching
-        calculatePaymentTotals(allOrders);
-        // By default, show last 24 hours
+        // Filter orders by time window
         filterOrdersByTimeWindow(allOrders);
       } else {
         console.log("No orders found");
       }
-    } catch (error) {
-      console.error("Error fetching orders: ", error);
-    }
-  };
 
-  // Calculate payment method totals
-  const calculatePaymentTotals = (orders) => {
-    console.log("Calculating totals for orders:", orders);
+      // Calculate totals from invoices
+      if (invoicesResponse?.data?.data) {
+        const invoices = invoicesResponse.data.data;
+        const today = new Date();
+        // Filter invoices to only include today's
+        const todaysInvoices = invoices.filter((invoice) => {
+          const invoiceDate = new Date(invoice.createdAt);
+          return (
+            invoiceDate.getFullYear() === today.getFullYear() &&
+            invoiceDate.getMonth() === today.getMonth() &&
+            invoiceDate.getDate() === today.getDate()
+          );
+        });
 
-    let totalMomo = 0;
-    let totalCash = 0;
+        let totalMomo = 0;
+        let totalCash = 0;
+        let totalCredit = 0;
+        let totalPartialCash = 0;
+        let totalPartialMomo = 0;
 
-    orders.forEach((order) => {
-      const totalAmount =
-        order?.items?.reduce((sum, item) => {
-          return sum + parseFloat(item.price) * parseFloat(item.quantity);
-        }, 0) || 0;
+        todaysInvoices.forEach((invoice) => {
+          const totalAmount = invoice.totalAmount || 0;
 
-      if (order.paymentMethod === "momo") {
-        totalMomo += totalAmount;
-      } else if (order.paymentMethod === "cash") {
-        totalCash += totalAmount;
-      } else if (order.paymentMethod === "momo/cash") {
-        totalMomo += parseFloat(order.momoAmount || 0);
-        totalCash += parseFloat(order.cashAmount || 0);
+          if (invoice.paymentMethod === "momo") {
+            totalMomo += totalAmount;
+          } else if (invoice.paymentMethod === "cash") {
+            totalCash += totalAmount;
+          } else if (invoice.paymentMethod === "credit") {
+            totalCredit += totalAmount;
+          } else if (invoice.paymentMethod === "momo/cash") {
+            totalMomo += parseFloat(invoice.momoAmount || 0);
+            totalCash += parseFloat(invoice.cashAmount || 0);
+          } else if (invoice.paymentType === "partial") {
+            if (invoice.momoAmount)
+              totalPartialMomo += parseFloat(invoice.momoAmount);
+            if (invoice.cashAmount)
+              totalPartialCash += parseFloat(invoice.cashAmount);
+          }
+        });
+
+        setMomoAmount(totalMomo);
+        setCashAmount(totalCash);
+        setPaymentTotals({
+          cash: totalCash,
+          momo: totalMomo,
+          credit: totalCredit,
+          partialCash: totalPartialCash,
+          partialMomo: totalPartialMomo,
+        });
       }
-    });
-
-    setMomoAmount(totalMomo);
-    setCashAmount(totalCash);
-
-    console.log("Momo Total:", totalMomo);
-    console.log("Cash Total:", totalCash);
+    } catch (error) {
+      console.error("Error fetching data: ", error);
+    }
   };
 
   useEffect(() => {
@@ -85,7 +111,7 @@ const Orders = () => {
 
   useEffect(() => {
     if (filteredOrders.length > 0) {
-      calculatePaymentTotals(filteredOrders);
+      // We don't need to recalculate totals here anymore since it's based on invoices
     }
   }, [filteredOrders]);
 
@@ -100,6 +126,28 @@ const Orders = () => {
     });
   };
 
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        );
+        if (response.data && response.data.data) {
+          setInvoices(response.data.data);
+        }
+
+        //reduce total amount
+        const total = response.data.data.reduce(
+          (sum, invoice) => sum + invoice?.totalAmount,
+          0
+        );
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+      }
+    };
+
+    fetchInvoices();
+  }, []);
   // Filter orders by time window (last 24 hours by default)
   const filterOrdersByTimeWindow = (orders = orderList) => {
     const now = new Date();
@@ -118,7 +166,6 @@ const Orders = () => {
     setStartDate("");
     setEndDate("");
     applySearch(sortedOrders);
-    calculatePaymentTotals(sortedOrders);
   };
 
   // Filter orders by custom date range
@@ -140,7 +187,6 @@ const Orders = () => {
     setFilteredOrders(sortedOrders);
     setIsCustomDate(true);
     applySearch(sortedOrders);
-    calculatePaymentTotals(sortedOrders);
   };
 
   // Apply search filter
@@ -186,7 +232,7 @@ const Orders = () => {
 
     try {
       const response = await axios.get(
-        `https://temiperi-stocks-backend.onrender.com/temiperi/delete-order?id=${id}`
+        `https://temiperi-stocks-backend.onrender.com/temiperi/delete-invoice?id=${id}`
       );
 
       if (response.data && response.data.success) {
@@ -290,7 +336,7 @@ const Orders = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Get current orders
+  // Get current orders for pagination
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
   const currentOrders = filteredOrders.slice(
@@ -299,7 +345,12 @@ const Orders = () => {
   );
 
   // Change page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = (pageNumber) => {
+    // Ensure pageNumber is within valid range
+    const maxPage = Math.ceil(filteredOrders.length / ordersPerPage);
+    const validPageNumber = Math.max(1, Math.min(pageNumber, maxPage));
+    setCurrentPage(validPageNumber);
+  };
 
   const EditForm = () => {
     if (!editingOrder) return null;
@@ -656,11 +707,11 @@ const Orders = () => {
         </table>
 
         {/* Pagination */}
-        <div className="pagination-container mt-4 flex justify-center items-center gap-2">
+        <div className="pagination-container p-4 flex justify-center items-center gap-2">
           <button
             onClick={() => paginate(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
@@ -671,9 +722,9 @@ const Orders = () => {
             <button
               key={index}
               onClick={() => paginate(index + 1)}
-              className={`px-3 py-1 rounded ${
+              className={`px-4 py-2 rounded-lg transition-colors ${
                 currentPage === index + 1
-                  ? "bg-blue-500 text-white"
+                  ? "bg-blue-600 text-white"
                   : "bg-gray-200 hover:bg-gray-300"
               }`}
             >
@@ -686,12 +737,13 @@ const Orders = () => {
             disabled={
               currentPage === Math.ceil(filteredOrders.length / ordersPerPage)
             }
-            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
         </div>
       </div>
+
       {editingOrder && <EditForm />}
     </div>
   );

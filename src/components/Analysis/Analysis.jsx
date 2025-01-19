@@ -13,6 +13,8 @@ const Analysis = () => {
   const [selectedTimeFrame, setSelectedTimeFrame] = useState("monthly");
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [products, setProducts] = useState([]);
+  const [productsInventory, setProductsInventory] = useState([]);
+  const [invoiceTotal, setInvoiceTotal] = useState(0);
   const [topProducts, setTopProducts] = useState([]);
   const [timeFrameData, setTimeFrameData] = useState({
     labels: [],
@@ -23,66 +25,190 @@ const Analysis = () => {
     total: 0,
   });
   const [productPerformance, setProductPerformance] = useState({
-    timeLabels: [],
-    datasets: [],
     summary: {
       totalRevenue: 0,
       totalQuantity: 0,
       averageOrderValue: 0,
       bestPerformingPeriod: "",
       worstPerformingPeriod: "",
-      bestPerformingProduct: {
-        name: "",
-        revenue: 0,
-        quantity: 0
-      }
+      bestPerformingProduct: { name: "", revenue: 0, quantity: 0 },
     },
   });
 
-  // Fetch orders data
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        "https://temiperi-stocks-backend.onrender.com/temiperi/orders"
-      );
-      if (response?.data?.data) {
-        const orders = response.data.data;
-        processOrdersData(orders);
-        calculateTopProducts(orders);
-        updateTimeFrameAnalysis(orders);
-        processProductPerformance(orders);
+  // Add 24-hour reset functionality
+  useEffect(() => {
+    // Function to check and reset sales data
+    const checkAndResetSales = () => {
+      const now = new Date();
+      const lastResetTime = localStorage.getItem("lastSalesResetTime");
+
+      if (
+        !lastResetTime ||
+        now - new Date(lastResetTime) >= 24 * 60 * 60 * 1000
+      ) {
+        // Reset sales data
+        setSalesData({});
+        setTimeFrameData({
+          labels: [],
+          values: [],
+          average: 0,
+          highest: 0,
+          lowest: 0,
+          total: 0,
+        });
+        setProductPerformance({
+          summary: {
+            totalRevenue: 0,
+            totalQuantity: 0,
+            averageOrderValue: 0,
+            bestPerformingPeriod: "",
+            worstPerformingPeriod: "",
+            bestPerformingProduct: { name: "", revenue: 0, quantity: 0 },
+          },
+        });
+        setTopProducts([]);
+
+        // Update last reset time
+        localStorage.setItem("lastSalesResetTime", now.toISOString());
+
+        // Fetch fresh data
+        const fetchData = async () => {
+          try {
+            const [invoicesResponse, productsResponse] = await Promise.all([
+              axios.get(
+                "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+              ),
+              axios.get(
+                "https://temiperi-stocks-backend.onrender.com/temiperi/products"
+              ),
+            ]);
+
+            if (productsResponse?.data?.products) {
+              setProductsInventory(productsResponse.data.products);
+            }
+
+            if (invoicesResponse?.data?.data) {
+              const invoices = invoicesResponse.data.data;
+              processOrdersData(invoices);
+              calculateTopProducts(invoices);
+              updateTimeFrameAnalysis(invoices);
+              processProductPerformance(invoices);
+            }
+          } catch (error) {
+            console.error("Error fetching data:", error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        fetchData();
       }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    // Check on component mount
+    checkAndResetSales();
+
+    // Set up interval to check every hour
+    const interval = setInterval(checkAndResetSales, 60 * 60 * 1000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
+  }, []);
+
+  // Separate useEffect just for fetching products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/products"
+        );
+        if (response?.data?.products) {
+          const products = response.data.products;
+          setProductsInventory(products);
+          setProductPerformance((prev) => ({
+            ...prev,
+            summary: {
+              ...prev.summary,
+              totalQuantity: products.reduce((total, product) => {
+                const quantity = parseInt(product.quantity) || 0;
+                return total + quantity;
+              }, 0),
+            },
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []); // Only run once on component mount
+  // function to get the invoices and update the invoices
 
   useEffect(() => {
-    fetchOrders();
+    const fetchInvoices = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        );
+        if (response?.data?.data) {
+          const invoices = response.data.data;
+          const totalInvoiceAmount = invoices.reduce(
+            (total, invoice) => total + invoice.totalAmount,
+            0
+          );
+          setInvoiceTotal(totalInvoiceAmount);
+        }
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+      }
+    };
+
+    fetchInvoices();
+  }, []);
+  // Separate useEffect for invoices and other data
+  useEffect(() => {
+    const fetchInvoicesData = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        );
+        if (response?.data?.data) {
+          const invoices = response.data.data;
+          processOrdersData(invoices);
+          calculateTopProducts(invoices);
+          updateTimeFrameAnalysis(invoices);
+          processProductPerformance(invoices);
+        }
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoicesData();
   }, [selectedYear, selectedMonth, selectedTimeFrame, selectedProduct]);
 
   // Process product performance data
-  const processProductPerformance = (orders) => {
+  const processProductPerformance = (invoices) => {
     // Extract unique products
     const uniqueProducts = new Set();
-    orders.forEach(order => {
-      order.items.forEach(item => uniqueProducts.add(item.name));
+    invoices.forEach((invoice) => {
+      invoice.items.forEach((item) => uniqueProducts.add(item.description));
     });
     setProducts(Array.from(uniqueProducts));
 
-    // Filter orders based on selected time frame
-    const filteredOrders = orders.filter(order => {
-      const orderDate = new Date(order.createdAt);
-      const orderYear = orderDate.getFullYear();
-      const orderMonth = orderDate.getMonth();
+    // Filter invoices based on selected time frame
+    const filteredInvoices = invoices.filter((invoice) => {
+      const invoiceDate = new Date(invoice.createdAt);
+      const invoiceYear = invoiceDate.getFullYear();
+      const invoiceMonth = invoiceDate.getMonth();
 
-      if (selectedTimeFrame === 'monthly') {
-        return orderYear === selectedYear;
+      if (selectedTimeFrame === "monthly") {
+        return invoiceYear === selectedYear;
       } else {
-        return orderYear === selectedYear && orderMonth === selectedMonth;
+        return invoiceYear === selectedYear && invoiceMonth === selectedMonth;
       }
     });
 
@@ -90,27 +216,35 @@ const Analysis = () => {
     const timeFrameData = new Map();
     const productData = new Map();
 
-    filteredOrders.forEach(order => {
-      const orderDate = new Date(order.createdAt);
-      let timeKey = '';
+    filteredInvoices.forEach((invoice) => {
+      const invoiceDate = new Date(invoice.createdAt);
+      let timeKey = "";
 
       switch (selectedTimeFrame) {
-        case 'monthly':
-          timeKey = orderDate.getMonth();
+        case "monthly":
+          timeKey = invoiceDate.getMonth();
           break;
-        case 'weekly':
-          const weekNum = Math.ceil((orderDate.getDate() + 
-            new Date(orderDate.getFullYear(), orderDate.getMonth(), 1).getDay()) / 7);
+        case "weekly":
+          const weekNum = Math.ceil(
+            (invoiceDate.getDate() +
+              new Date(
+                invoiceDate.getFullYear(),
+                invoiceDate.getMonth(),
+                1
+              ).getDay()) /
+              7
+          );
           timeKey = `Week ${weekNum}`;
           break;
-        case 'daily':
-          timeKey = orderDate.getDate();
+        case "daily":
+          timeKey = invoiceDate.getDate();
           break;
       }
 
-      order.items.forEach(item => {
-        if (selectedProduct === 'all' || selectedProduct === item.name) {
-          const amount = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+      invoice.items.forEach((item) => {
+        if (selectedProduct === "all" || selectedProduct === item.description) {
+          const amount =
+            (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
           const quantity = parseFloat(item.quantity) || 0;
 
           if (!timeFrameData.has(timeKey)) {
@@ -121,10 +255,14 @@ const Analysis = () => {
           timeData.quantity += quantity;
           timeData.orders += 1;
 
-          if (!productData.has(item.name)) {
-            productData.set(item.name, { revenue: 0, quantity: 0, orders: 0 });
+          if (!productData.has(item.description)) {
+            productData.set(item.description, {
+              revenue: 0,
+              quantity: 0,
+              orders: 0,
+            });
           }
-          const prodData = productData.get(item.name);
+          const prodData = productData.get(item.description);
           prodData.revenue += amount;
           prodData.quantity += quantity;
           prodData.orders += 1;
@@ -132,41 +270,44 @@ const Analysis = () => {
       });
     });
 
-    // Find best performing product
+    // Find best performing product based on revenue
     let bestProduct = { name: "", revenue: 0, quantity: 0 };
     productData.forEach((data, name) => {
       if (data.revenue > bestProduct.revenue) {
         bestProduct = {
-          name,
+          name: name,
           revenue: data.revenue,
-          quantity: data.quantity
+          quantity: data.quantity,
         };
       }
     });
 
     // Prepare performance summary
-    const totalRevenue = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.revenue, 0);
-    const totalQuantity = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.quantity, 0);
-    const totalOrders = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.orders, 0);
-    
-    setProductPerformance({
-      ...productPerformance,
+    const totalRevenue = Array.from(productData.values()).reduce(
+      (sum, data) => sum + data.revenue,
+      0
+    );
+
+    const totalOrders = Array.from(productData.values()).reduce(
+      (sum, data) => sum + data.orders,
+      0
+    );
+
+    setProductPerformance((prev) => ({
+      ...prev,
       summary: {
+        ...prev.summary,
         totalRevenue,
-        totalQuantity,
         averageOrderValue: totalOrders ? totalRevenue / totalOrders : 0,
         bestPerformingPeriod: getBestPerformingPeriod(timeFrameData),
         worstPerformingPeriod: getWorstPerformingPeriod(timeFrameData),
-        bestPerformingProduct: bestProduct
-      }
-    });
+        bestPerformingProduct: bestProduct,
+      },
+    }));
   };
 
   const getBestPerformingPeriod = (timeFrameData) => {
-    let bestPeriod = '';
+    let bestPeriod = "";
     let maxRevenue = -1;
     timeFrameData.forEach((data, period) => {
       if (data.revenue > maxRevenue) {
@@ -178,7 +319,7 @@ const Analysis = () => {
   };
 
   const getWorstPerformingPeriod = (timeFrameData) => {
-    let worstPeriod = '';
+    let worstPeriod = "";
     let minRevenue = Infinity;
     timeFrameData.forEach((data, period) => {
       if (data.revenue < minRevenue && data.revenue > 0) {
@@ -190,30 +331,47 @@ const Analysis = () => {
   };
 
   const formatPeriod = (period) => {
-    if (selectedTimeFrame === 'monthly') {
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                         'July', 'August', 'September', 'October', 'November', 'December'];
+    if (selectedTimeFrame === "monthly") {
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
       return monthNames[period];
     }
     return period.toString();
   };
 
-  // Process orders data for monthly sales chart
-  const processOrdersData = (orders) => {
+  // Process invoices data for monthly sales chart
+  const processOrdersData = (invoices) => {
     const monthlySales = Array(12).fill(0);
+    const today = new Date();
 
-    orders.forEach((order) => {
-      const orderDate = new Date(order.createdAt);
-      const orderYear = orderDate.getFullYear();
+    invoices.forEach((invoice) => {
+      const invoiceDate = new Date(invoice.createdAt);
 
-      if (orderYear === selectedYear) {
-        const month = orderDate.getMonth();
-        const orderTotal = order.items.reduce((total, item) => {
+      // Only process invoices from today
+      if (
+        invoiceDate.getFullYear() === today.getFullYear() &&
+        invoiceDate.getMonth() === today.getMonth() &&
+        invoiceDate.getDate() === today.getDate()
+      ) {
+        const month = invoiceDate.getMonth();
+        const invoiceTotal = invoice.items.reduce((total, item) => {
           const price = parseFloat(item.price) || 0;
           const quantity = parseFloat(item.quantity) || 0;
           return total + price * quantity;
         }, 0);
-        monthlySales[month] += orderTotal;
+        monthlySales[month] += invoiceTotal;
       }
     });
 
@@ -221,99 +379,96 @@ const Analysis = () => {
   };
 
   // Calculate top products by total amount
-  const calculateTopProducts = (orders) => {
-    // Create a map to store product totals
+  const calculateTopProducts = (invoices) => {
     const productTotals = new Map();
+    const today = new Date();
 
-    // Process all orders and their items
-    orders.forEach((order) => {
-      if (!order.items || !Array.isArray(order.items)) {
-        console.log("Invalid order:", order);
-        return;
-      }
+    invoices.forEach((invoice) => {
+      const invoiceDate = new Date(invoice.createdAt);
 
-      order.items.forEach((item) => {
-        // Debug log to see item structure
-        console.log("Processing item:", item);
-
-        // Try to get product name from all possible locations
-        const productName = item.product?.name || item.productName || item.name;
-
-        if (!productName) {
-          console.log("No product name found in item:", item);
+      // Only process invoices from today
+      if (
+        invoiceDate.getFullYear() === today.getFullYear() &&
+        invoiceDate.getMonth() === today.getMonth() &&
+        invoiceDate.getDate() === today.getDate()
+      ) {
+        if (!invoice.items || !Array.isArray(invoice.items)) {
+          console.log("Invalid invoice:", invoice);
           return;
         }
 
-        const price =
-          parseFloat(item.price) || parseFloat(item.product?.price) || 0;
-        const quantity = parseFloat(item.quantity) || 0;
-        const itemTotal = price * quantity;
+        invoice.items.forEach((item) => {
+          const productName =
+            item.product?.name || item.productName || item.name;
 
-        // If product exists in map, update its totals
-        if (productTotals.has(productName)) {
-          const product = productTotals.get(productName);
-          product.totalAmount += itemTotal;
-          product.totalQuantity += quantity;
-          product.orders += 1;
-        } else {
-          // Add new product to map
-          productTotals.set(productName, {
-            name: productName,
-            totalAmount: itemTotal,
-            totalQuantity: quantity,
-            unitPrice: price,
-            orders: 1,
-          });
-        }
-      });
+          if (!productName) {
+            return;
+          }
+
+          const price =
+            parseFloat(item.price) || parseFloat(item.product?.price) || 0;
+          const quantity = parseFloat(item.quantity) || 0;
+          const itemTotal = price * quantity;
+
+          if (productTotals.has(productName)) {
+            const product = productTotals.get(productName);
+            product.totalAmount += itemTotal;
+            product.totalQuantity += quantity;
+            product.orders += 1;
+          } else {
+            productTotals.set(productName, {
+              name: productName,
+              totalAmount: itemTotal,
+              totalQuantity: quantity,
+              unitPrice: price,
+              orders: 1,
+            });
+          }
+        });
+      }
     });
 
-    // Debug log for product totals
-    console.log("Product totals:", Array.from(productTotals.entries()));
-
-    // Convert map to array and sort by total amount
     const sortedProducts = Array.from(productTotals.values())
       .filter((product) => product.totalAmount > 0)
       .sort((a, b) => b.totalAmount - a.totalAmount)
       .slice(0, 4);
 
-    console.log("Top products:", sortedProducts);
     setTopProducts(sortedProducts);
   };
 
   // Process time-based analysis
-  const updateTimeFrameAnalysis = (orders) => {
-    const filteredOrders = orders.filter((order) => {
-      const orderDate = new Date(order.createdAt);
-      const orderYear = orderDate.getFullYear();
-      const orderMonth = orderDate.getMonth();
+  const updateTimeFrameAnalysis = (invoices) => {
+    const today = new Date();
+    const filteredInvoices = invoices.filter((invoice) => {
+      const invoiceDate = new Date(invoice.createdAt);
 
-      if (selectedTimeFrame === "monthly") {
-        return orderYear === selectedYear;
-      } else {
-        return orderYear === selectedYear && orderMonth === selectedMonth;
-      }
+      // Only process invoices from today
+      return (
+        invoiceDate.getFullYear() === today.getFullYear() &&
+        invoiceDate.getMonth() === today.getMonth() &&
+        invoiceDate.getDate() === today.getDate()
+      );
     });
 
     let timeFrameMap = new Map();
     let labels = [];
     let values = [];
 
-    filteredOrders.forEach((order) => {
-      const orderDate = new Date(order.createdAt);
+    filteredInvoices.forEach((invoice) => {
+      const invoiceDate = new Date(invoice.createdAt);
       let key = "";
 
       switch (selectedTimeFrame) {
         case "monthly":
-          key = orderDate.getMonth(); // 0-11
+          key = invoiceDate.getMonth(); // 0-11
           break;
         case "weekly":
           // Get week number within the month
           const weekNum = Math.ceil(
-            (orderDate.getDate() +
+            (invoiceDate.getDate() +
               new Date(
-                orderDate.getFullYear(),
-                orderDate.getMonth(),
+                invoiceDate.getFullYear(),
+                invoiceDate.getMonth(),
                 1
               ).getDay()) /
               7
@@ -321,17 +476,17 @@ const Analysis = () => {
           key = `Week ${weekNum}`;
           break;
         case "daily":
-          key = orderDate.getDate(); // 1-31
+          key = invoiceDate.getDate(); // 1-31
           break;
       }
 
-      const orderTotal = order.items.reduce((sum, item) => {
+      const invoiceTotal = invoice.items.reduce((sum, item) => {
         return (
           sum + (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0)
         );
       }, 0);
 
-      timeFrameMap.set(key, (timeFrameMap.get(key) || 0) + orderTotal);
+      timeFrameMap.set(key, (timeFrameMap.get(key) || 0) + invoiceTotal);
     });
 
     if (selectedTimeFrame === "monthly") {
@@ -376,8 +531,8 @@ const Analysis = () => {
       labels,
       values,
       average,
-      highest: Math.max(...values),
-      lowest: Math.min(...nonZeroValues),
+      highest: values.length ? Math.max(...values) : 0,
+      lowest: nonZeroValues.length ? Math.min(...nonZeroValues) : 0,
       total: values.reduce((a, b) => a + b, 0),
     });
   };
