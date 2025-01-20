@@ -320,11 +320,18 @@ const Products = () => {
                     </tr>
                   ) : (
                     currentProducts.map((product) => (
-                      <tr key={product._id} className="border-b hover:bg-gray-50">
+                      <tr
+                        key={product._id}
+                        className="border-b hover:bg-gray-50"
+                      >
                         <td className="px-4 py-2">{product?.name}</td>
                         <td className="px-4 py-2">{product?.category}</td>
-                        <td className="px-4 py-2">GH₵{product?.price?.retail_price}</td>
-                        <td className="px-4 py-2">GH₵{product?.price?.whole_sale_price}</td>
+                        <td className="px-4 py-2">
+                          GH₵{product?.price?.retail_price}
+                        </td>
+                        <td className="px-4 py-2">
+                          GH₵{product?.price?.whole_sale_price}
+                        </td>
                         <td className="px-4 py-2">{product?.quantity}</td>
                         <td className="px-4 py-2">
                           {new Date(product?.createdAt).toLocaleDateString()}
@@ -354,7 +361,7 @@ const Products = () => {
           )}
 
           {/* Pagination */}
-          <div className="pagination-container mt-4 flex justify-center items-center gap-2">
+          {/* <div className="pagination-container mt-4 flex justify-center items-center gap-2">
             <button
               onClick={() => paginate(currentPage - 1)}
               disabled={currentPage === 1}
@@ -386,9 +393,9 @@ const Products = () => {
             >
               Next
             </button>
-          </div>
+          </div> */}
           <div className="overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead className="text-gray-500 bg-white text-sm">
                   <tr>
@@ -453,7 +460,7 @@ const Products = () => {
                   )}
                 </tbody>
               </table>
-            </div>
+            </div> */}
 
             {/* Pagination */}
             <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
