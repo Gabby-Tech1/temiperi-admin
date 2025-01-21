@@ -13,29 +13,39 @@
   font-family: "Montserrat", sans-serif;
 }
 
-/* body {
-  min-height: 100vh;
-  background-color: white;
-} */
-
 html {
   scroll-behavior: smooth;
 }
-/* 
-::-webkit-scrollbar {
-  display: none;
-} */
 
-/* p { */
-  /* font-family: "Itim", cursive; */
-  /* font-weight: 400;
-} */
-/* 
-button {
-  width: 100%;
-  padding: 12px;
-  background-color: black;
-  color: white;
-  border: none;
-  margin-top: 10px;
-} */
+/* Hide scrollbar for screens smaller than 768px */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  * {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+/* Show scrollbar for larger screens */
+@media (min-width: 769px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}

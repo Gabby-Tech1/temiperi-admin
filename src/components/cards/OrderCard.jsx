@@ -17,6 +17,7 @@ const OrderCard = () => {
   const [momoAmount, setMomoAmount] = useState(0);
   const [cashAmount, setCashAmount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [invoiceTotal, setInvoiceTotal] = useState(0);
   const [ordersPerPage] = useState(10);
   const [paymentTotals, setPaymentTotals] = useState({
     cash: 0,
@@ -27,6 +28,14 @@ const OrderCard = () => {
   });
   const { refreshTrigger, triggerRefresh } = useOrderContext();
 
+  // Function to check if a date is within the last 24 hours
+  const isWithinLast24Hours = (date) => {
+    const orderDate = new Date(date);
+    const now = new Date();
+    const diffInHours = (now - orderDate) / (1000 * 60 * 60);
+    return diffInHours <= 24;
+  };
+
   // Fetch orders from API
   const fetchOrders = async () => {
     try {
@@ -36,10 +45,27 @@ const OrderCard = () => {
       if (response?.data) {
         const allOrders = response?.data?.data || [];
         setOrderList(allOrders);
-        console.log("Fetched orders:", allOrders);
-        // Calculate totals immediately after fetching
-        calculatePaymentTotals(allOrders);
-        // By default, show last 24 hours
+        
+        // Filter orders for today and within last 24 hours
+        const today = new Date();
+        const todaysOrders = allOrders.filter((order) => {
+          const orderDate = new Date(order.createdAt);
+          return (
+            orderDate.getFullYear() === today.getFullYear() &&
+            orderDate.getMonth() === today.getMonth() &&
+            orderDate.getDate() === today.getDate()
+          );
+        });
+
+        // Calculate total amount for today's orders
+        const todayTotal = todaysOrders.reduce((total, order) => {
+          return total + (order.totalAmount || 0);
+        }, 0);
+        
+        setInvoiceTotal(todayTotal);
+        
+        // Calculate other totals
+        calculatePaymentTotals(todaysOrders);
         filterOrdersByTimeWindow(allOrders);
       } else {
         console.log("No orders found");
@@ -81,6 +107,9 @@ const OrderCard = () => {
 
   useEffect(() => {
     fetchOrders();
+    // Set up interval to refresh every minute
+    const intervalId = setInterval(fetchOrders, 60000);
+    return () => clearInterval(intervalId);
   }, [refreshTrigger]);
 
   useEffect(() => {
@@ -470,22 +499,12 @@ const OrderCard = () => {
             <img src={card} alt="card" className="w-12 h-12" />
             <div className="">
               <p className="text-xs font-semibold text-gray-500 mt-4">
-                Total Amount
+                Today's Total Amount
               </p>
-              <p>
-                {filteredOrders
-                  .reduce((total, order) => {
-                    const orderTotal = order?.items?.reduce(
-                      (sum, item) =>
-                        sum + (item?.quantity || 0) * (item?.price || 0),
-                      0
-                    );
-                    return total + orderTotal;
-                  }, 0)
-                  .toFixed(2)}
-              </p>
+              <p>GH₵ {invoiceTotal.toFixed(2)}</p>
             </div>
           </div>
+
           <div className="flex items-start ">
             <img src={arrow} alt="arrow" className="w-8 h-8" />
             <div className="text-gary-500 text-[13px] flex flex-col leading-3 text-gray-500 justify-start">
@@ -514,22 +533,12 @@ const OrderCard = () => {
             <img src={card} alt="card" className="w-12 h-12" />
             <div className="">
               <p className="text-xs font-semibold text-gray-500 mt-4">
-                Total Amount
+                Today's Total Amount
               </p>
-              <p>
-                {filteredOrders
-                  .reduce((total, order) => {
-                    const orderTotal = order?.items?.reduce(
-                      (sum, item) =>
-                        sum + (item?.quantity || 0) * (item?.price || 0),
-                      0
-                    );
-                    return total + orderTotal;
-                  }, 0)
-                  .toFixed(2)}
-              </p>
+              <p>GH₵ {invoiceTotal.toFixed(2)}</p>
             </div>
           </div>
+
           <div className="flex items-start ">
             <img src={arrow} alt="arrow" className="w-8 h-8" />
             <div className="text-gary-500 text-[13px] flex flex-col leading-3 text-gray-500 justify-start">
