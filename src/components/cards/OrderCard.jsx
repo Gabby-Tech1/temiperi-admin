@@ -44,9 +44,8 @@ const OrderCard = () => {
       );
       if (response?.data) {
         const allOrders = response?.data?.data || [];
-        setOrderList(allOrders);
         
-        // Filter orders for today and within last 24 hours
+        // Filter orders for today
         const today = new Date();
         const todaysOrders = allOrders.filter((order) => {
           const orderDate = new Date(order.createdAt);
@@ -57,16 +56,18 @@ const OrderCard = () => {
           );
         });
 
+        setOrderList(todaysOrders); // Set only today's orders
+        
         // Calculate total amount for today's orders
         const todayTotal = todaysOrders.reduce((total, order) => {
           return total + (order.totalAmount || 0);
         }, 0);
         
         setInvoiceTotal(todayTotal);
+        setFilteredOrders(todaysOrders); // Set filtered orders to today's orders
         
         // Calculate other totals
         calculatePaymentTotals(todaysOrders);
-        filterOrdersByTimeWindow(allOrders);
       } else {
         console.log("No orders found");
       }
@@ -491,7 +492,7 @@ const OrderCard = () => {
       <div className="border-2 rounded-md p-2 w-full">
         <div className="flex items-center justify-between">
           <h3 className="text-2xl font-semibold">{filteredOrders.length}</h3>
-          <p className="text-sm">Orders in last 24 hours</p>
+          <p className="text-sm">Today's Orders</p>
         </div>
         <hr />
         <div className="flex items-center justify-between mt-6">
@@ -525,7 +526,7 @@ const OrderCard = () => {
       <div className="border-2 rounded-md p-2 w-full">
         <div className="flex items-center justify-between">
           <h3 className="text-2xl font-semibold">{filteredOrders.length}</h3>
-          <p className="text-sm">Orders in last 24 hours</p>
+          <p className="text-sm">Today's Orders</p>
         </div>
         <hr />
         <div className="flex items-center justify-between mt-6">
