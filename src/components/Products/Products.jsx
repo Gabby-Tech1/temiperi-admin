@@ -266,8 +266,7 @@ const Products = () => {
       <div className="body_container">
         <div className="product_container">
           <div className="header-section">
-            <h2 className="text-2xl font-bold">Products</h2>
-            <div className="filter-section">
+            <div className="flex items-center justify-between ">
               <div className="search-container">
                 <input
                   type="text"
