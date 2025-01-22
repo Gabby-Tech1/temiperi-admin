@@ -131,28 +131,86 @@ const Orders = () => {
   };
 
   useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        const response = await axios.get(
-          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
-        );
-        if (response.data && response.data.data) {
-          setInvoices(response.data.data);
-        }
+    // Fetch immediately
+    fetchOrders();
 
-        //reduce total amount
-        const total = response.data.data.reduce(
-          (sum, invoice) => sum + invoice?.totalAmount,
-          0
-        );
-        setInvoiceTotal(total);
-      } catch (error) {
-        console.error("Error fetching invoices:", error);
-      }
-    };
+    // Set up interval to fetch every 5 minutes
+    const intervalId = setInterval(fetchOrders, 5 * 60 * 1000);
 
-    fetchInvoices();
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
+
+  // Filter orders by custom date range
+  const filterOrdersByDateRange = () => {
+    if (!startDate || !endDate) return;
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0); // Start of the day
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // End of the day
+
+    // Filter orders within date range
+    const dateFilteredOrders = orderList.filter((order) => {
+      const orderDate = new Date(order?.createdAt);
+      return orderDate >= start && orderDate <= end;
+    });
+
+    // Filter invoices within date range
+    const dateFilteredInvoices = invoices.filter((invoice) => {
+      const invoiceDate = new Date(invoice?.createdAt);
+      return invoiceDate >= start && invoiceDate <= end;
+    });
+
+    // Calculate payment totals for the filtered date range
+    let totalMomo = 0;
+    let totalCash = 0;
+    let totalCredit = 0;
+    let totalPartialCash = 0;
+    let totalPartialMomo = 0;
+
+    dateFilteredInvoices.forEach((invoice) => {
+      const totalAmount = invoice.totalAmount || 0;
+
+      if (invoice.paymentMethod === "momo") {
+        totalMomo += totalAmount;
+      } else if (invoice.paymentMethod === "cash") {
+        totalCash += totalAmount;
+      } else if (invoice.paymentMethod === "credit") {
+        totalCredit += totalAmount;
+      } else if (invoice.paymentMethod === "momo/cash") {
+        totalMomo += parseFloat(invoice.momoAmount || 0);
+        totalCash += parseFloat(invoice.cashAmount || 0);
+      } else if (invoice.paymentType === "partial") {
+        if (invoice.momoAmount) totalPartialMomo += parseFloat(invoice.momoAmount);
+        if (invoice.cashAmount) totalPartialCash += parseFloat(invoice.cashAmount);
+      }
+    });
+
+    // Update all the state values
+    setMomoAmount(totalMomo);
+    setCashAmount(totalCash);
+    setPaymentTotals({
+      cash: totalCash,
+      momo: totalMomo,
+      credit: totalCredit,
+      partialCash: totalPartialCash,
+      partialMomo: totalPartialMomo,
+    });
+
+    const sortedOrders = sortOrdersByPaymentMethod(dateFilteredOrders);
+    setFilteredOrders(sortedOrders);
+    setIsCustomDate(true);
+    applySearch(sortedOrders);
+
+    // Calculate total invoice amount for the filtered date range
+    const filteredTotal = dateFilteredInvoices.reduce(
+      (sum, invoice) => sum + (invoice?.totalAmount || 0),
+      0
+    );
+    setInvoiceTotal(filteredTotal);
+  };
+
   // Filter orders by time window (last 24 hours by default)
   const filterOrdersByTimeWindow = (orders = orderList) => {
     const now = new Date();
@@ -170,27 +228,6 @@ const Orders = () => {
     setIsCustomDate(false);
     setStartDate("");
     setEndDate("");
-    applySearch(sortedOrders);
-  };
-
-  // Filter orders by custom date range
-  const filterOrdersByDateRange = () => {
-    if (!startDate || !endDate) return;
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999); // Include the entire end date
-
-    const dateFilteredOrders = orderList
-      .filter((order) => {
-        const orderDate = new Date(order?.createdAt);
-        return orderDate >= start && orderDate <= end;
-      })
-      .sort((a, b) => new Date(b?.createdAt) - new Date(a?.createdAt)); // Sort by date descending
-
-    const sortedOrders = sortOrdersByPaymentMethod(dateFilteredOrders);
-    setFilteredOrders(sortedOrders);
-    setIsCustomDate(true);
     applySearch(sortedOrders);
   };
 
@@ -331,14 +368,27 @@ const Orders = () => {
   };
 
   useEffect(() => {
-    // Fetch immediately
-    fetchOrders();
+    const fetchInvoices = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        );
+        if (response.data && response.data.data) {
+          setInvoices(response.data.data);
+        }
 
-    // Set up interval to fetch every 5 minutes
-    const intervalId = setInterval(fetchOrders, 5 * 60 * 1000);
+        //reduce total amount
+        const total = response.data.data.reduce(
+          (sum, invoice) => sum + invoice?.totalAmount,
+          0
+        );
+        setInvoiceTotal(total);
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+      }
+    };
 
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
+    fetchInvoices();
   }, []);
 
   // Get current orders for pagination
