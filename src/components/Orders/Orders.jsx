@@ -18,6 +18,7 @@ const Orders = () => {
   const [cashAmount, setCashAmount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [invoices, setInvoices] = useState([]);
+  const [invoiceTotal, setInvoiceTotal] = useState(0);
   const [ordersPerPage] = useState(10);
   const [paymentTotals, setPaymentTotals] = useState({
     cash: 0,
@@ -26,6 +27,9 @@ const Orders = () => {
     partialCash: 0,
     partialMomo: 0,
   });
+
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
 
   const { refreshTrigger, triggerRefresh } = useOrderContext();
 
@@ -141,6 +145,7 @@ const Orders = () => {
           (sum, invoice) => sum + invoice?.totalAmount,
           0
         );
+        setInvoiceTotal(total);
       } catch (error) {
         console.error("Error fetching invoices:", error);
       }
@@ -508,6 +513,12 @@ const Orders = () => {
     );
   };
 
+  // Handle view order details click
+  const handleViewDetails = (order) => {
+    setSelectedOrderDetails(order);
+    setShowPurchaseModal(true);
+  };
+
   return (
     <div className="table_container">
       {/* <div className="header-section border border-solid rounded-md border-gray-300 p-6">
@@ -588,46 +599,46 @@ const Orders = () => {
         </div> */}
 
       <div className="flex items-center justify-between mb-4 p-4 -mt-10">
-          <div className="flex items-center justify-center gap-4 p-2 ">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="date-input"
-              />
-              {/* <span className="date-separator">to</span> */}
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="date-input"
-              />
-              <button
-                onClick={filterOrdersByDateRange}
-                disabled={!startDate || !endDate}
-                className="filter-btn"
-              >
-                Filter
-              </button>
-          </div>
-          <div className="flex items-center gap-4">
-              <input
-                type="text"
-                placeholder="Search orders..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="search-input"
-              />
-              <select
-                value={searchBy}
-                onChange={(e) => setSearchBy(e.target.value)}
-                className="search-select"
-              >
-                <option value="all">All</option>
-                <option value="invoice">Invoice Number</option>
-                <option value="name">Customer Name</option>
-              </select>
-            </div>
+        <div className="flex items-center justify-center gap-4 p-2 ">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="date-input"
+          />
+          {/* <span className="date-separator">to</span> */}
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="date-input"
+          />
+          <button
+            onClick={filterOrdersByDateRange}
+            disabled={!startDate || !endDate}
+            className="filter-btn"
+          >
+            Filter
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <input
+            type="text"
+            placeholder="Search orders..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+          <select
+            value={searchBy}
+            onChange={(e) => setSearchBy(e.target.value)}
+            className="search-select"
+          >
+            <option value="all">All</option>
+            <option value="invoice">Invoice Number</option>
+            <option value="name">Customer Name</option>
+          </select>
+        </div>
       </div>
 
       <div className="orders-list mt-6">
@@ -688,6 +699,31 @@ const Orders = () => {
                 <td className="px-4 py-2">
                   <div className="flex gap-2">
                     <button
+                      onClick={() => handleViewDetails(order)}
+                      className="text-green-600 hover:text-green-800"
+                      title="View Order Details"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                    </button>
+                    <button
                       onClick={() => handleEdit(order)}
                       className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
                     >
@@ -745,6 +781,129 @@ const Orders = () => {
       </div>
 
       {editingOrder && <EditForm />}
+
+      {/* Order Details Modal */}
+      {showPurchaseModal && selectedOrderDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Order Details</h2>
+              <button
+                onClick={() => setShowPurchaseModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="text-gray-600">Customer Name</p>
+                  <p className="font-semibold">
+                    {selectedOrderDetails.customerName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Invoice Number</p>
+                  <p className="font-semibold">
+                    {selectedOrderDetails.invoiceNumber}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Date</p>
+                  <p className="font-semibold">
+                    {new Date(selectedOrderDetails.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Payment Method</p>
+                  <p className="font-semibold">
+                    {selectedOrderDetails.paymentMethod}
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Quantity
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price Per Unit
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total Value
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {selectedOrderDetails.items.map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {item.name || item.description}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {item.quantity}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          GH₵{item.price?.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          GH₵{(item.quantity * item.price)?.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-gray-50">
+                    <tr>
+                      <td
+                        colSpan="2"
+                        className="px-6 py-4 text-sm font-medium text-gray-900"
+                      >
+                        Total
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {selectedOrderDetails.items.reduce(
+                          (acc, item) => acc + item.quantity,
+                          0
+                        )}{" "}
+                        units
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        GH₵
+                        {selectedOrderDetails.items
+                          .reduce(
+                            (acc, item) => acc + item.quantity * item.price,
+                            0
+                          )
+                          .toFixed(2)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

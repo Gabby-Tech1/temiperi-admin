@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import card from '../../assets/card-icon.png'
-import arrow from '../../assets/arrow.png'
+import card from "../../assets/card-icon.png";
+import arrow from "../../assets/arrow.png";
 import { MdTrendingUp, MdTrendingDown } from "react-icons/md";
 import { BsArrowUpRight, BsArrowDownRight } from "react-icons/bs";
 
@@ -14,6 +14,8 @@ const Cards = () => {
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [products, setProducts] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
+  const [stockTotal, setStockTotal] = useState(0);
+  const [invoiceTotal, setInvoiceTotal] = useState(0);
   const [timeFrameData, setTimeFrameData] = useState({
     labels: [],
     values: [],
@@ -34,8 +36,8 @@ const Cards = () => {
       bestPerformingProduct: {
         name: "",
         revenue: 0,
-        quantity: 0
-      }
+        quantity: 0,
+      },
     },
   });
 
@@ -64,22 +66,66 @@ const Cards = () => {
     fetchOrders();
   }, [selectedYear, selectedMonth, selectedTimeFrame, selectedProduct]);
 
+  // Fetch invoice total
+  useEffect(() => {
+    const fetchInvoiceTotal = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+        );
+        if (response.data && response.data.data) {
+          const total = response.data.data.reduce(
+            (sum, invoice) => sum + (invoice?.totalAmount || 0),
+            0
+          );
+          setInvoiceTotal(total);
+        }
+      } catch (error) {
+        console.error("Error fetching invoice total:", error);
+      }
+    };
+
+    fetchInvoiceTotal();
+  }, []);
+
+  // Fetch total stocks
+  useEffect(() => {
+    const fetchTotalStocks = async () => {
+      try {
+        const response = await axios.get(
+          "https://temiperi-stocks-backend.onrender.com/temiperi/products"
+        );
+        if (response.data && response.data.products) {
+          const total = response.data.products.reduce(
+            (sum, product) => sum + (product?.quantity || 0),
+            0
+          );
+          setStockTotal(total);
+        }
+      } catch (error) {
+        console.error("Error fetching total stocks:", error);
+      }
+    };
+
+    fetchTotalStocks();
+  }, []);
+
   // Process product performance data
   const processProductPerformance = (orders) => {
     // Extract unique products
     const uniqueProducts = new Set();
-    orders.forEach(order => {
-      order.items.forEach(item => uniqueProducts.add(item.name));
+    orders.forEach((order) => {
+      order.items.forEach((item) => uniqueProducts.add(item.name));
     });
     setProducts(Array.from(uniqueProducts));
 
     // Filter orders based on selected time frame
-    const filteredOrders = orders.filter(order => {
+    const filteredOrders = orders.filter((order) => {
       const orderDate = new Date(order.createdAt);
       const orderYear = orderDate.getFullYear();
       const orderMonth = orderDate.getMonth();
 
-      if (selectedTimeFrame === 'monthly') {
+      if (selectedTimeFrame === "monthly") {
         return orderYear === selectedYear;
       } else {
         return orderYear === selectedYear && orderMonth === selectedMonth;
@@ -90,27 +136,35 @@ const Cards = () => {
     const timeFrameData = new Map();
     const productData = new Map();
 
-    filteredOrders.forEach(order => {
+    filteredOrders.forEach((order) => {
       const orderDate = new Date(order.createdAt);
-      let timeKey = '';
+      let timeKey = "";
 
       switch (selectedTimeFrame) {
-        case 'monthly':
+        case "monthly":
           timeKey = orderDate.getMonth();
           break;
-        case 'weekly':
-          const weekNum = Math.ceil((orderDate.getDate() + 
-            new Date(orderDate.getFullYear(), orderDate.getMonth(), 1).getDay()) / 7);
+        case "weekly":
+          const weekNum = Math.ceil(
+            (orderDate.getDate() +
+              new Date(
+                orderDate.getFullYear(),
+                orderDate.getMonth(),
+                1
+              ).getDay()) /
+              7
+          );
           timeKey = `Week ${weekNum}`;
           break;
-        case 'daily':
+        case "daily":
           timeKey = orderDate.getDate();
           break;
       }
 
-      order.items.forEach(item => {
-        if (selectedProduct === 'all' || selectedProduct === item.name) {
-          const amount = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+      order.items.forEach((item) => {
+        if (selectedProduct === "all" || selectedProduct === item.name) {
+          const amount =
+            (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
           const quantity = parseFloat(item.quantity) || 0;
 
           if (!timeFrameData.has(timeKey)) {
@@ -139,19 +193,25 @@ const Cards = () => {
         bestProduct = {
           name,
           revenue: data.revenue,
-          quantity: data.quantity
+          quantity: data.quantity,
         };
       }
     });
 
     // Prepare performance summary
-    const totalRevenue = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.revenue, 0);
-    const totalQuantity = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.quantity, 0);
-    const totalOrders = Array.from(productData.values())
-      .reduce((sum, data) => sum + data.orders, 0);
-    
+    const totalRevenue = Array.from(productData.values()).reduce(
+      (sum, data) => sum + data.revenue,
+      0
+    );
+    const totalQuantity = Array.from(productData.values()).reduce(
+      (sum, data) => sum + data.quantity,
+      0
+    );
+    const totalOrders = Array.from(productData.values()).reduce(
+      (sum, data) => sum + data.orders,
+      0
+    );
+
     setProductPerformance({
       ...productPerformance,
       summary: {
@@ -160,13 +220,13 @@ const Cards = () => {
         averageOrderValue: totalOrders ? totalRevenue / totalOrders : 0,
         bestPerformingPeriod: getBestPerformingPeriod(timeFrameData),
         worstPerformingPeriod: getWorstPerformingPeriod(timeFrameData),
-        bestPerformingProduct: bestProduct
-      }
+        bestPerformingProduct: bestProduct,
+      },
     });
   };
 
   const getBestPerformingPeriod = (timeFrameData) => {
-    let bestPeriod = '';
+    let bestPeriod = "";
     let maxRevenue = -1;
     timeFrameData.forEach((data, period) => {
       if (data.revenue > maxRevenue) {
@@ -178,7 +238,7 @@ const Cards = () => {
   };
 
   const getWorstPerformingPeriod = (timeFrameData) => {
-    let worstPeriod = '';
+    let worstPeriod = "";
     let minRevenue = Infinity;
     timeFrameData.forEach((data, period) => {
       if (data.revenue < minRevenue && data.revenue > 0) {
@@ -190,9 +250,21 @@ const Cards = () => {
   };
 
   const formatPeriod = (period) => {
-    if (selectedTimeFrame === 'monthly') {
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                         'July', 'August', 'September', 'October', 'November', 'December'];
+    if (selectedTimeFrame === "monthly") {
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
       return monthNames[period];
     }
     return period.toString();
@@ -384,8 +456,8 @@ const Cards = () => {
 
   return (
     <div>
-        <div className="flex items-center flex-end w-[70%] gap-6 justify-end">
-          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="flex items-center flex-end w-[70%] gap-6 justify-end">
+        {/* <div className="bg-white p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Sales</p>
@@ -402,49 +474,56 @@ const Cards = () => {
               </div>
             </div>
           </div> */}
-          <div className="border-2 rounded-md p-2 w-full">
-            <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-semibold">GH₵{timeFrameData.total.toFixed(2)}</h3>
-                <p>Total Stock</p>
+        <div className="border-2 rounded-md p-2 w-full">
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-semibold">
+              GH₵{invoiceTotal.toFixed(2)}
+            </h3>
+            <p>Total Revenue</p>
+          </div>
+          <hr />
+          <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center gap-2">
+              <img src={card} alt="card" className="w-12 h-12" />
+              <div className="">
+                <p className="text-xs font-semibold text-gray-500 mt-4">
+                  Total Stocks Available
+                </p>
+                <p>{stockTotal}</p>
+              </div>
             </div>
-            <hr />
-            <div className="flex items-center justify-between mt-6">
-                <div className="flex items-center gap-2">
-                    <img src={card} alt="card" className='w-12 h-12' />
-                    <div className="">
-                        <p className="text-xs font-semibold text-gray-500 mt-4">Total Stocks Available</p>
-                        <p>{productPerformance.summary.totalQuantity}</p>
-                    </div>
-                </div>
-                <div className="flex items-center">
-                    <img src={arrow} alt="arrow" className="w-8 h-8"/>
-                    <p className="text-gary-500 text-sm">Last 24 hours</p>
-                </div>
+            <div className="flex items-center">
+              <img src={arrow} alt="arrow" className="w-8 h-8" />
+              <p className="text-gary-500 text-sm">Last 24 hours</p>
             </div>
           </div>
-          <div className="border-2 rounded-md p-2 w-full">
-            <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-semibold">GH₵{timeFrameData.total.toFixed(2)}</h3>
-                <p>Total Stock</p>
+        </div>
+        <div className="border-2 rounded-md p-2 w-full">
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-semibold">
+              GH₵{invoiceTotal.toFixed(2)}
+            </h3>
+            <p>Total Revenue</p>
+          </div>
+          <hr />
+          <div className="flex items-center justify-between mt-6">
+            <div className="flex items-center gap-2">
+              <img src={card} alt="card" className="w-12 h-12" />
+              <div className="">
+                <p className="text-xs font-semibold text-gray-500 mt-4">
+                  Total Stocks Available
+                </p>
+                <p>{stockTotal}</p>
+              </div>
             </div>
-            <hr />
-            <div className="flex items-center justify-between mt-6">
-                <div className="flex items-center gap-2">
-                    <img src={card} alt="card" className='w-12 h-12' />
-                    <div className="">
-                        <p className="text-xs font-semibold text-gray-500 mt-4">Total Stocks Available</p>
-                        <p>{productPerformance.summary.totalQuantity}</p>
-                    </div>
-                </div>
-                <div className="flex items-center">
-                    <img src={arrow} alt="arrow" className="w-8 h-8"/>
-                    <p className="text-gary-500 text-sm">Last 24 hours</p>
-                </div>
+            <div className="flex items-center">
+              <img src={arrow} alt="arrow" className="w-8 h-8" />
+              <p className="text-gary-500 text-sm">Last 24 hours</p>
             </div>
           </div>
-          
+        </div>
 
-          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+        {/* <div className="bg-white p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Average Sale</p>
@@ -462,7 +541,7 @@ const Cards = () => {
             </div>
           </div> */}
 
-          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+        {/* <div className="bg-white p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Highest Sale</p>
@@ -480,7 +559,7 @@ const Cards = () => {
             </div>
           </div> */}
 
-          {/* <div className="bg-white p-6 rounded-xl shadow-sm">
+        {/* <div className="bg-white p-6 rounded-xl shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Lowest Sale</p>
@@ -497,9 +576,9 @@ const Cards = () => {
               </div>
             </div>
           </div> */}
-        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Cards
+export default Cards;

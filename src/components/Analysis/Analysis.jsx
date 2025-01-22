@@ -74,9 +74,9 @@ const Analysis = () => {
         // Fetch fresh data
         const fetchData = async () => {
           try {
-            const [invoicesResponse, productsResponse] = await Promise.all([
+            const [ordersResponse, productsResponse] = await Promise.all([
               axios.get(
-                "https://temiperi-stocks-backend.onrender.com/temiperi/invoices"
+                "https://temiperi-stocks-backend.onrender.com/temiperi/orders"
               ),
               axios.get(
                 "https://temiperi-stocks-backend.onrender.com/temiperi/products"
@@ -88,11 +88,11 @@ const Analysis = () => {
             }
 
             if (invoicesResponse?.data?.data) {
-              const invoices = invoicesResponse.data.data;
-              processOrdersData(invoices);
-              calculateTopProducts(invoices);
-              updateTimeFrameAnalysis(invoices);
-              processProductPerformance(invoices);
+              const orders = invoicesResponse.data.data;
+              processOrdersData(orders);
+              calculateTopProducts(orders);
+              updateTimeFrameAnalysis(orders);
+              processProductPerformance(orders);
             }
           } catch (error) {
             console.error("Error fetching data:", error);
@@ -562,7 +562,7 @@ const Analysis = () => {
         </div>
         <div className="flex flex-col gap-5 w-full">
           <div className="">
-          {/* Time Frame Controls */}
+            {/* Time Frame Controls */}
             <div className="bg-white p-6 rounded-xl shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold">Sales Analysis</h2>
@@ -590,7 +590,9 @@ const Analysis = () => {
                   {selectedTimeFrame !== "monthly" && (
                     <select
                       value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      onChange={(e) =>
+                        setSelectedMonth(parseInt(e.target.value))
+                      }
                       className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {[
@@ -688,12 +690,12 @@ const Analysis = () => {
             </div>
 
             {/* Top Products Table */}
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-sm text-blue-600">Total Revenue</p>
                 <h4 className="text-xl font-bold text-blue-900 mt-1">
-                  GH₵{productPerformance.summary.totalRevenue.toFixed(2)}
+                  GH₵{invoiceTotal.toFixed(2)}
                 </h4>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
@@ -720,58 +722,65 @@ const Analysis = () => {
                   {productPerformance.summary.bestPerformingProduct.name}
                 </h4>
                 <p className="text-sm text-indigo-600 mt-1">
-                  GH₵{productPerformance.summary.bestPerformingProduct.revenue.toFixed(2)}
+                  GH₵
+                  {productPerformance.summary.bestPerformingProduct.revenue.toFixed(
+                    2
+                  )}
                 </p>
               </div>
             </div>
           </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-semibold mb-6">Top Performing Products</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Product
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Sales
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Quantity Sold
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Orders
-                      </th>
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <h2 className="text-xl font-semibold mb-6">
+              Top Performing Products
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Product
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Sales
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Quantity Sold
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Orders
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {topProducts.map((product, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {product.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          GH₵{product.totalAmount.toFixed(2)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {product.totalQuantity}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {product.orders}
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {topProducts.map((product, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {product.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            GH₵{product.totalAmount.toFixed(2)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {product.totalQuantity}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{product.orders}</div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
+          </div>
         </div>
       </div>
     </div>
