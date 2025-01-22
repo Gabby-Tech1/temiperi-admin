@@ -4,6 +4,7 @@ import card from "../../assets/card-icon.png";
 import arrow from "../../assets/arrow.png";
 import { MdTrendingUp, MdTrendingDown } from "react-icons/md";
 import { BsArrowUpRight, BsArrowDownRight } from "react-icons/bs";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 const Cards = () => {
   const [salesData, setSalesData] = useState({});
@@ -40,6 +41,7 @@ const Cards = () => {
       },
     },
   });
+  const [showRevenue, setShowRevenue] = useState(false);
 
   // Fetch orders data
   const fetchOrders = async () => {
@@ -476,8 +478,24 @@ const Cards = () => {
           </div> */}
         <div className="border-2 rounded-md p-2 w-full">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-semibold">
-              GH₵{invoiceTotal.toFixed(2)}
+            <h3 className="text-2xl font-semibold flex items-center gap-2">
+              {showRevenue ? (
+                <>
+                  GH₵{invoiceTotal.toFixed(2)}
+                  <AiOutlineEyeInvisible
+                    className="cursor-pointer text-gray-600 hover:text-gray-800"
+                    onClick={() => setShowRevenue(false)}
+                  />
+                </>
+              ) : (
+                <>
+                  {"*".repeat(8)}
+                  <AiOutlineEye
+                    className="cursor-pointer text-gray-600 hover:text-gray-800"
+                    onClick={() => setShowRevenue(true)}
+                  />
+                </>
+              )}
             </h3>
             <p>Total Revenue</p>
           </div>
@@ -500,8 +518,24 @@ const Cards = () => {
         </div>
         <div className="border-2 rounded-md p-2 w-full">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-semibold">
-              GH₵{invoiceTotal.toFixed(2)}
+            <h3 className="text-2xl font-semibold flex items-center gap-2">
+              {showRevenue ? (
+                <>
+                  GH₵{invoiceTotal.toFixed(2)}
+                  <AiOutlineEyeInvisible
+                    className="cursor-pointer text-gray-600 hover:text-gray-800"
+                    onClick={() => setShowRevenue(false)}
+                  />
+                </>
+              ) : (
+                <>
+                  {"*".repeat(8)}
+                  <AiOutlineEye
+                    className="cursor-pointer text-gray-600 hover:text-gray-800"
+                    onClick={() => setShowRevenue(true)}
+                  />
+                </>
+              )}
             </h3>
             <p>Total Revenue</p>
           </div>

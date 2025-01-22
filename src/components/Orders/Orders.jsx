@@ -45,7 +45,7 @@ const Orders = () => {
         ),
       ]);
 
-      if (ordersResponse?.data) {
+      if (invoicesResponse?.data?.data) {
         const allOrders = invoicesResponse?.data?.data || [];
         setOrderList(allOrders);
         // Filter orders by time window
@@ -452,7 +452,7 @@ const Orders = () => {
                     </label>
                     <input
                       type="text"
-                      value={item.name || ""}
+                      value={item.name || item.description || ""}
                       disabled
                       className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50"
                     />
