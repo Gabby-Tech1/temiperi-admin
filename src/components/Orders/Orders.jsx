@@ -182,8 +182,10 @@ const Orders = () => {
         totalMomo += parseFloat(invoice.momoAmount || 0);
         totalCash += parseFloat(invoice.cashAmount || 0);
       } else if (invoice.paymentType === "partial") {
-        if (invoice.momoAmount) totalPartialMomo += parseFloat(invoice.momoAmount);
-        if (invoice.cashAmount) totalPartialCash += parseFloat(invoice.cashAmount);
+        if (invoice.momoAmount)
+          totalPartialMomo += parseFloat(invoice.momoAmount);
+        if (invoice.cashAmount)
+          totalPartialCash += parseFloat(invoice.cashAmount);
       }
     });
 
