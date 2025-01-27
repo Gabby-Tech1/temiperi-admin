@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const LowStockAlert = () => {
   const [lowStockProducts, setLowStockProducts] = useState([]);
@@ -13,21 +12,14 @@ const LowStockAlert = () => {
           "https://temiperi-stocks-backend.onrender.com/temiperi/products"
         );
         const productsData = response?.data?.products || [];
-        const lowStock = productsData.filter(product => product.quantity < 10);
+        const lowStock = productsData.filter(
+          (product) => product.quantity < 10
+        );
         setLowStockProducts(lowStock);
-        
-        // Show toast notification if there are low stock products
-        if (lowStock.length > 0) {
-          toast.warning(`${lowStock.length} products are running low on stock!`, {
-            position: "top-right",
-            autoClose: 5000
-          });
-        }
-        
+
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching low stock products:', error);
-        toast.error('Failed to fetch product stock information');
+        console.error("Error fetching low stock products:", error);
         setLoading(false);
       }
     };
@@ -48,25 +40,33 @@ const LowStockAlert = () => {
   }
 
   return (
-    <div className="fixed top-20 right-4 z-50 bg-red-50 p-4 rounded-lg shadow-lg border border-red-200 max-w-md">
-      <div className="flex justify-between items-center mb-2">
+    <div className="mb-4 bg-red-50 rounded-lg shadow-sm border border-red-200">
+      <div className="flex justify-between items-center p-3 border-b border-red-100">
         <h3 className="text-lg font-semibold text-red-700">Low Stock Alert!</h3>
         <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
           {lowStockProducts.length} items
         </span>
       </div>
-      <div className="max-h-60 overflow-y-auto">
-        {lowStockProducts.map((product) => (
-          <div key={product._id} className="mb-2 p-2 bg-white rounded border border-red-100">
-            <div className="font-medium text-red-600">{product.name}</div>
-            <div className="text-sm text-gray-600">
-              Quantity remaining: <span className="font-bold text-red-500">{product.quantity}</span>
+      <div className="p-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {lowStockProducts.map((product) => (
+            <div
+              key={product._id}
+              className="bg-white rounded border border-red-100 p-2"
+            >
+              <div className="font-medium text-red-600">{product.name}</div>
+              <div className="text-sm text-gray-600">
+                Quantity remaining:{" "}
+                <span className="font-bold text-red-500">
+                  {product.quantity}
+                </span>
+              </div>
+              <div className="text-xs text-gray-500">
+                Category: {product.category}
+              </div>
             </div>
-            <div className="text-xs text-gray-500">
-              Category: {product.category}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

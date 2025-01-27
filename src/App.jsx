@@ -20,7 +20,7 @@ import { HiMenuAlt2 } from "react-icons/hi";
 import Stocks from "./pages/Stocks";
 import Order from "./pages/Orders";
 import Reports from "./pages/Reports";
-import LowStockAlert from "./components/LowStockAlert/LowStockAlert";
+import LowStock from "./pages/LowStock";
 
 const App = ({ data }) => {
   // const [showLogin, setShowLogin] = useState(true);
@@ -107,7 +107,6 @@ const App = ({ data }) => {
 
           {/* Scrollable Content */}
           <div className="flex-1 max-md:w-screen overflow-y-auto px-4 lg:px-6 pt-8 md:pt-16 lg:pt-0 pb-6">
-            <LowStockAlert />
             <Routes>
               <Route path="/" element={<Stocks />} />
               <Route path="/product" element={<Products />} />
@@ -119,6 +118,7 @@ const App = ({ data }) => {
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/analysis" element={<Analysis />} />
               <Route path="/summary" element={<Summary />} />
+              <Route path="/low-stock" element={<LowStock />} />
             </Routes>
           </div>
         </div>

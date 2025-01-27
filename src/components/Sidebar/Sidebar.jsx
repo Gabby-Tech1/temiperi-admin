@@ -5,6 +5,7 @@ import { IoMdClose, IoMdMenu } from 'react-icons/io';
 import { GoChecklist } from "react-icons/go";
 import { IoSettings } from 'react-icons/io5';
 import { TbReport } from "react-icons/tb";
+import { MdWarning } from "react-icons/md";
 
 export const Sidebar = ({ onClose }) => {
     const location = useLocation();
@@ -43,6 +44,9 @@ export const Sidebar = ({ onClose }) => {
                 <Link to="/report" className='w-full' onClick={onClose}>
                     <p className={getLinkClass('/report')}><TbReport className="text-2xl"/> Report</p>
                 </Link>
+                <Link to="/low-stock" className='w-full' onClick={onClose}>
+                    <p className={getLinkClass('/low-stock')}><MdWarning className="text-2xl"/> Low Stock</p>
+                </Link>
                 <Link to="/settings" className='w-full' onClick={onClose}>
                     <p className={getLinkClass('/settings')}><IoSettings className="text-2xl"/> Settings</p>
                 </Link>
@@ -55,5 +59,3 @@ export const Sidebar = ({ onClose }) => {
         </div>
     );
 };
-
-
