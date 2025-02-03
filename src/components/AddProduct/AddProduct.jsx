@@ -121,7 +121,7 @@ const AddProduct = () => {
     <>
       <ToastContainer />
       {/* <Header /> */}
-      <div>
+      <div className="w-full">
         <div className="p-4">
           
           <div className="bg-white rounded-lg p-6 shadow-sm">

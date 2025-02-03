@@ -262,7 +262,7 @@ const Products = () => {
   };
 
   return (
-    <div>
+    <div className="w-full">
       <div className="body_container">
         <div className="product_container">
           <div className="header-section">

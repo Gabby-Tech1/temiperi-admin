@@ -281,7 +281,7 @@ const Summary = () => {
   };
 
   return (
-    <div className="summary-container">
+    <div className="summary-container w-full">
       {/* <Sidebar /> */}
       
       <div className="summary-content">
